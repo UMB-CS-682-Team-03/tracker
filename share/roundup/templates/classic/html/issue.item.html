@@ -73,7 +73,7 @@ python:db.user.classhelp('username,realname,address', property='nosy', width='60
  </td>
 </tr>
 
-<issue-table></issue-table>
+<issue-table  id = "issueweb"></issue-table>
 
 <tr>
  <th i18n:translate="">Assigned To</th>
@@ -233,12 +233,10 @@ python:db.user.classhelp('username,realname,address', property='nosy', width='60
     }
 
     connectedCallback() {
-      // Add event listener to the Apply button
       this.shadowRoot.getElementById('applyButton').addEventListener('click', () => {
         this.applySuperseder();
       });
 
-      // Insert dummy data
       this.insertDummyData();
     }
 
@@ -273,8 +271,20 @@ python:db.user.classhelp('username,realname,address', property='nosy', width='60
         .map(checkbox => checkbox.value);
       const supersederField = this.shadowRoot.getElementById('selectedSuperseder');
       supersederField.textContent = selectedIssues.join(', ');
+
+      this.dispatchEvent(new CustomEvent('supersederApplied', {
+        bubbles: true,
+        composed: true,
+        detail: selectedIssues
+      }));
     }
-  }
+      
+}
 
   customElements.define('issue-table', IssueTable);
+
+  document.getElementById("issueweb").addEventListener('supersederApplied', function(event) {
+  console.log('Superseder applied:', event.detail);
+
+});
 </script>
