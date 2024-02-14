@@ -54,6 +54,7 @@
 
 <tr>
  <th i18n:translate="">Superseder</th>
+ 
  <td>
   <span tal:replace="structure python:context.superseder.field(showid=1, size=20)" />
   <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder')" />
@@ -71,6 +72,8 @@
 python:db.user.classhelp('username,realname,address', property='nosy', width='600')" /><br>
  </td>
 </tr>
+
+<issue-table></issue-table>
 
 <tr>
  <th i18n:translate="">Assigned To</th>
@@ -199,3 +202,79 @@ python:db.user.classhelp('username,realname,address', property='nosy', width='60
 </td>
 
 </tal:block>
+
+
+<script>
+  class IssueTable extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: 'open' });
+      this.shadowRoot.innerHTML = `
+        <style>
+          /* Add your custom styles here */
+        </style>
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Issue ID</th>
+              <th>Assigned To</th>
+              <th>Superseder</th>
+              <th>Select</th>
+            </tr>
+          </thead>
+          <tbody id="issueBody">
+            <!-- Dummy data will be inserted here -->
+          </tbody>
+        </table>
+        <button id="applyButton">Apply Superseder</button>
+        <span id="selectedSuperseder"></span>
+      `;
+    }
+
+    connectedCallback() {
+      // Add event listener to the Apply button
+      this.shadowRoot.getElementById('applyButton').addEventListener('click', () => {
+        this.applySuperseder();
+      });
+
+      // Insert dummy data
+      this.insertDummyData();
+    }
+
+    insertDummyData() {
+      // Dummy data array
+      const dummyData = [
+        { title: 'Issue_1', id: 342, assignedTo: 'User 1', superseder: '' },
+        { title: 'Issue_2', id: 786, assignedTo: 'User 2', superseder: '' },
+        { title: 'Issue_3', id: 894, assignedTo: 'User 1', superseder: '' }
+      ];
+
+      const tbody = this.shadowRoot.getElementById('issueBody');
+
+      // Insert dummy data into the table
+      dummyData.forEach(issue => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${issue.title}</td>
+          <td>${issue.id}</td>
+          <td>${issue.assignedTo}</td>
+          <td>${issue.superseder}</td>
+          <td><input type="checkbox" value="${issue.id}" class="issueCheckbox"></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    applySuperseder() {
+      const checkboxes = this.shadowRoot.querySelectorAll('.issueCheckbox');
+      const selectedIssues = Array.from(checkboxes)
+        .filter(checkbox => checkbox.checked)
+        .map(checkbox => checkbox.value);
+      const supersederField = this.shadowRoot.getElementById('selectedSuperseder');
+      supersederField.textContent = selectedIssues.join(', ');
+    }
+  }
+
+  customElements.define('issue-table', IssueTable);
+</script>
