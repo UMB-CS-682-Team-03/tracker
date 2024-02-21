@@ -1,4 +1,3 @@
-<!-- dollarId: issue.item,v 1.4 2001/08/03 01:19:43 richard Exp dollar-->
 <tal:block metal:use-macro="templates/page/macros/icing">
 <title metal:fill-slot="head_title">
 <tal:block condition="context/id" i18n:translate=""
@@ -72,8 +71,6 @@
 python:db.user.classhelp('username,realname,address', property='nosy', width='600')" /><br>
  </td>
 </tr>
-
-<issue-table  id = "issueweb"></issue-table>
 
 <tr>
  <th i18n:translate="">Assigned To</th>
@@ -204,6 +201,11 @@ python:db.user.classhelp('username,realname,address', property='nosy', width='60
 </tal:block>
 
 
+
+<h1>Superseder</h1>
+<issue-table  id = "issueweb"></issue-table>
+
+
 <script>
   class IssueTable extends HTMLElement {
     constructor() {
@@ -216,11 +218,9 @@ python:db.user.classhelp('username,realname,address', property='nosy', width='60
         <table>
           <thead>
             <tr>
+              <th>Select</th>
               <th>Title</th>
               <th>Issue ID</th>
-              <th>Assigned To</th>
-              <th>Superseder</th>
-              <th>Select</th>
             </tr>
           </thead>
           <tbody id="issueBody">
@@ -243,9 +243,9 @@ python:db.user.classhelp('username,realname,address', property='nosy', width='60
     insertDummyData() {
       // Dummy data array
       const dummyData = [
-        { title: 'Issue_1', id: 342, assignedTo: 'User 1', superseder: '' },
-        { title: 'Issue_2', id: 786, assignedTo: 'User 2', superseder: '' },
-        { title: 'Issue_3', id: 894, assignedTo: 'User 1', superseder: '' }
+        { title: 'Issue_1', id: 342},
+        { title: 'Issue_2', id: 786},
+        { title: 'Issue_3', id: 894}
       ];
 
       const tbody = this.shadowRoot.getElementById('issueBody');
@@ -254,11 +254,9 @@ python:db.user.classhelp('username,realname,address', property='nosy', width='60
       dummyData.forEach(issue => {
         const row = document.createElement('tr');
         row.innerHTML = `
+          <td><input type="checkbox" value="${issue.id}" class="issueCheckbox"></td>
           <td>${issue.title}</td>
           <td>${issue.id}</td>
-          <td>${issue.assignedTo}</td>
-          <td>${issue.superseder}</td>
-          <td><input type="checkbox" value="${issue.id}" class="issueCheckbox"></td>
         `;
         tbody.appendChild(row);
       });
@@ -287,4 +285,254 @@ python:db.user.classhelp('username,realname,address', property='nosy', width='60
   console.log('Superseder applied:', event.detail);
 
 });
+</script>
+
+
+
+
+<!-- Keyword -->
+<h1>KeyWord</h1>
+<keyword-table id = "keywordWeb"></keyword-table>
+<script>
+  class KeywordsTable extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: 'open' });
+      this.shadowRoot.innerHTML = `
+        <style>
+          /* Add your custom styles here */
+        </style>
+        <table>
+          <thead>
+            <tr>
+              <th>Select</th>
+              <th>Name</th>
+            </tr>
+          </thead>
+          <tbody id="keywordBody">
+            <!-- Dummy data will be inserted here -->
+          </tbody>
+        </table>
+        <button id="applyButtonKeyword">Apply Keyword</button>
+        <span id="selectedKeyword"></span>
+      `;
+    }
+
+    connectedCallback() {
+      this.shadowRoot.getElementById('applyButtonKeyword').addEventListener('click', () => {
+        this.applyKeyword();
+      });
+
+      this.insertDummyDataKeyword();
+    }
+
+    insertDummyDataKeyword() {
+      // Dummy data array
+      const dummyData = [
+        { name: 'keyword'},
+        { name: 'webComponent'},
+        { name: 'RoundUp'}
+      ];
+
+      const tbody = this.shadowRoot.getElementById('keywordBody');
+
+      // Insert dummy data into the table
+      dummyData.forEach(keyword => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><input type="checkbox" value="${keyword.name}" class="keywordCheckbox"></td>
+          <td>${keyword.name}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    applyKeyword() {
+      const checkboxes = this.shadowRoot.querySelectorAll('.keywordCheckbox');
+      const selectedKeywords = Array.from(checkboxes)
+        .filter(checkbox => checkbox.checked)
+        .map(checkbox => checkbox.value);
+      const keywordField = this.shadowRoot.getElementById('selectedKeyword');
+      keywordField.textContent = selectedKeywords.join(', ');
+
+      this.dispatchEvent(new CustomEvent('keyWordApplied', {
+        bubbles: true,
+        composed: true,
+        detail: selectedKeywords
+      }));
+    }
+      
+}
+
+  customElements.define('keyword-table', KeywordsTable);
+
+  document.getElementById("keywordWeb").addEventListener('keyWordApplied', function(event) {
+  console.log('Keyword applied:', event.detail);
+
+});
+</script>
+
+
+
+
+
+<!-- search-form-component.html -->
+<!-- search-form-component.html -->
+<template id="search-form-template">
+  <form id="searchForm">
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username">
+    <label for="phone">Phone number:</label>
+    <input type="text" id="phone" name="phone">
+    <label for="roles">Roles:</label>
+    <select id="roles" name="roles">
+      <option value="">don't care</option>
+      <option value="User">User</option>
+      <option value="Admin">Admin</option>
+      <option value="Anonymous">Anonymous</option>
+    </select>
+    <input type="submit" value="Search">
+  </form>
+</template>
+
+<script>
+  class SearchFormComponent extends HTMLElement {
+    constructor() {
+      super();
+      const template = document.getElementById('search-form-template');
+      const templateContent = template.content;
+      this.attachShadow({ mode: 'open' }).appendChild(templateContent.cloneNode(true));
+    }
+
+    connectedCallback() {
+      this.shadowRoot.getElementById('searchForm').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const searchCriteria = Object.fromEntries(formData.entries());
+        this.dispatchEvent(new CustomEvent('search', { detail: searchCriteria }));
+      });
+    }
+  }
+
+  customElements.define('search-form-component', SearchFormComponent);
+</script>
+
+
+
+<!-- search-results-component.html -->
+<template id="search-results-template">
+  <table id="searchResults">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Username</th>
+        <th>Realname</th>
+        <th>Phone</th>
+        <th>Organisation</th>
+        <th>Roles</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</template>
+
+<script>
+  class SearchResultsComponent extends HTMLElement {
+    constructor() {
+      super();
+      const template = document.getElementById('search-results-template');
+      const templateContent = template.content;
+      this.attachShadow({ mode: 'open' }).appendChild(templateContent.cloneNode(true));
+    }
+
+    populateResults(results) {
+      const tbody = this.shadowRoot.querySelector('tbody');
+      tbody.innerHTML = ''; // Clear previous results
+      results.forEach((result, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><input type="checkbox" value="${index}"></td>
+          <td>${result.username}</td>
+          <td>${result.realname}</td>
+          <td>${result.phone}</td>
+          <td>${result.organisation}</td>
+          <td>${result.roles}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+  }
+
+  customElements.define('search-results-component', SearchResultsComponent);
+</script>
+
+
+
+
+<!-- submit-form-component.html -->
+<template id="submit-form-template">
+  <form id="submitForm">
+    <label for="selectedUsers">Selected Users:</label>
+    <input type="text" id="selectedUsers" readonly>
+    <input type="submit" value="Apply">
+  </form>
+</template>
+
+<script>
+  class SubmitFormComponent extends HTMLElement {
+    constructor() {
+      super();
+      const template = document.getElementById('submit-form-template');
+      const templateContent = template.content;
+      this.attachShadow({ mode: 'open' }).appendChild(templateContent.cloneNode(true));
+    }
+
+    connectedCallback() {
+  this.shadowRoot.getElementById('submitForm').addEventListener('submit', (event) => {
+    event.preventDefault();
+    setTimeout(() => { // Delay dispatching the event
+      const selectedCheckboxes = this.shadowRoot.querySelectorAll('input[type="checkbox"]:checked');
+      console.log('Selected Checkboxes:', selectedCheckboxes); // Log selected checkboxes
+      const selectedUsers = Array.from(selectedCheckboxes).map(checkbox => checkbox.parentNode.nextElementSibling.textContent);
+      const selectedUsernames = selectedUsers.join(', ');
+      console.log('Selected Users:', selectedUsernames);
+      this.shadowRoot.getElementById('selectedUsers').value = selectedUsernames;
+      this.dispatchEvent(new CustomEvent('apply', { detail: selectedUsers }));
+    }, 100); // Delay in milliseconds
+  });
+}
+
+  }
+
+  customElements.define('submit-form-component', SubmitFormComponent);
+</script>
+
+
+<!-- Three web components for nosy list -->
+<h1>NosyList</h1>
+<div>
+<search-form-component></search-form-component>
+<search-results-component></search-results-component>
+<submit-form-component></submit-form-component>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const searchForm = document.querySelector('search-form-component');
+    const searchResults = document.querySelector('search-results-component');
+    const submitForm = document.querySelector('submit-form-component');
+
+    searchForm.addEventListener('search', (event) => {
+      const dummyResults = [
+        { username: 'user1', realname: 'User One', phone: '123456789', organisation: 'Org 1', roles: 'User' },
+        { username: 'user2', realname: 'User Two', phone: '987654321', organisation: 'Org 2', roles: 'Admin' },
+        { username: 'user3', realname: 'User Three', phone: '555555555', organisation: 'Org 3', roles: 'Anonymous' }
+      ];
+      searchResults.populateResults(dummyResults);
+    });
+
+    submitForm.addEventListener('apply', (event) => {
+      console.log('Selected Users:', event.detail);
+    });
+  });
 </script>
