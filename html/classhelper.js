@@ -68,45 +68,170 @@ class ClassHelper extends HTMLElement {
         form.setAttribute("id", "popup-search");
 
         const params = this.getAttribute("searchWith").split(',');
-        for (var param of params) {
-            const prop = document.createElement("div");
-            const input = document.createElement("input");
-            input.setAttribute("name", param);
-            const label = document.createElement("label");
-            label.textContent = param;
-            label.setAttribute("for", param);
+        // for (var param of params) {
+        //     const prop = document.createElement("div");
+        //     // prop.style.marginRight = "20px";
+        //     const input = document.createElement("input");
+        //     input.setAttribute("name", param);
+        //     const label = document.createElement("label");
+        //     label.textContent = param;
+        //     label.setAttribute("for", param);
 
-            prop.appendChild(label);
-            prop.appendChild(input);
-            form.appendChild(prop);
+        //     prop.appendChild(label);
+        //     prop.appendChild(input);
+        //     form.appendChild(prop);
+        // }
+
+    //     for (var param of params) {
+    //         const row = document.createElement("tr");
+    
+    //         const th = document.createElement("th");
+    //         const label = document.createElement("label");
+    //         label.textContent = param + ":";
+    //         label.setAttribute("for", param);
+    //         th.appendChild(label);
+    //         row.appendChild(th);
+    
+    //         const td = document.createElement("td");
+    //         const input = document.createElement("input");
+    //         input.setAttribute("name", param);
+    //         input.setAttribute("id", param);
+    //         td.appendChild(input);
+    //         row.appendChild(td);
+    
+    //         form.appendChild(row);
+    //     }
+
+    //     const searchRow = document.createElement("tr");
+    // const searchCell = document.createElement("td");
+    // const searchButton = document.createElement("button");
+    // searchButton.textContent = "Search";
+    // searchButton.addEventListener("click", (e) => {
+    //     e.preventDefault();
+    //     let fd = new FormData(form);
+    //     this.dispatchEvent(new CustomEvent("search", {
+    //         detail: {
+    //             data: fd
+    //         }
+    //     }));
+    // });
+    // searchCell.appendChild(searchButton);
+    // searchRow.appendChild(searchCell);
+    // form.appendChild(searchRow);
+
+    // const resetRow = document.createElement("tr");
+    // const resetCell = document.createElement("td");
+    // const resetButton = document.createElement("button");
+    // resetButton.textContent = "Reset";
+    // resetButton.addEventListener("click", (e) => {
+    //     e.preventDefault();
+    //     form.reset();
+    // });
+    // resetCell.appendChild(resetButton);
+    // resetRow.appendChild(resetCell);
+    // form.appendChild(resetRow);
+
+    // fragment.appendChild(form);
+
+    // return fragment;
+
+
+
+    const table = document.createElement("table");
+
+    for (var param of params) {
+        const row = document.createElement("tr");
+        const labelCell = document.createElement("td");
+        const inputCell = document.createElement("td");
+
+        const label = document.createElement("label");
+        label.textContent = param + ":";
+        label.setAttribute("for", param);
+
+        if (param === "username" || param === "phone" || param === "roles") {
+            label.style.fontWeight = "bold";
         }
 
-        const search = document.createElement("button");
-        search.textContent = "Search";
-        const reset = document.createElement("button");
-        reset.textContent = "Reset";
+        const input = document.createElement("input");
+        input.setAttribute("name", param);
+        input.setAttribute("id", param);
 
-        search.addEventListener("click", (e) => {
-            e.preventDefault()
-            let fd = new FormData(form);
-            this.dispatchEvent(new CustomEvent("search", {
-                detail: {
-                    data: fd
-                }
-            }));
-        });
+        labelCell.appendChild(label);
+        row.appendChild(labelCell);
 
-        reset.addEventListener("click", (e) => {
-            e.preventDefault();
-            form.reset();
-        })
+        inputCell.appendChild(input);
+        row.appendChild(inputCell);
 
-        form.appendChild(search);
-        form.appendChild(reset);
+        table.appendChild(row);
+    }
 
-        fragment.appendChild(form);
+    // Add an empty row
+    const emptyRow = document.createElement("tr");
+    const emptyCell = document.createElement("td");
+    emptyRow.appendChild(emptyCell);
+    table.appendChild(emptyRow);
 
-        return fragment;
+    // Add search and reset buttons
+    const buttonRow = document.createElement("tr");
+    const buttonCell = document.createElement("td");
+    buttonCell.colSpan = 2;
+
+    const search = document.createElement("button");
+    search.textContent = "Search";
+    search.addEventListener("click", (e) => {
+        e.preventDefault();
+        let fd = new FormData(form);
+        this.dispatchEvent(new CustomEvent("search", {
+            detail: {
+                data: fd
+            }
+        }));
+    });
+
+    const reset = document.createElement("button");
+    reset.textContent = "Reset";
+    reset.addEventListener("click", (e) => {
+        e.preventDefault();
+        form.reset();
+    });
+
+    buttonCell.appendChild(search);
+    buttonCell.appendChild(reset);
+    buttonRow.appendChild(buttonCell);
+    table.appendChild(buttonRow);
+
+    form.appendChild(table);
+    fragment.appendChild(form);
+
+    return fragment;
+
+        // const search = document.createElement("button");
+        // search.textContent = "Search";
+        
+        // const reset = document.createElement("button");
+        // reset.textContent = "Reset";
+
+        // search.addEventListener("click", (e) => {
+        //     e.preventDefault()
+        //     let fd = new FormData(form);
+        //     this.dispatchEvent(new CustomEvent("search", {
+        //         detail: {
+        //             data: fd
+        //         }
+        //     }));
+        // });
+
+        // reset.addEventListener("click", (e) => {
+        //     e.preventDefault();
+        //     form.reset();
+        // })
+
+        // form.appendChild(search);
+        // form.appendChild(reset);
+
+        // fragment.appendChild(form);
+
+        // return fragment;
     }
 
     getPaginationFragment(prevUrl, nextUrl) {
@@ -167,6 +292,7 @@ class ClassHelper extends HTMLElement {
 
         const apply = document.createElement("button");
         apply.textContent = "Apply";
+        apply.style.fontWeight = "bold";
         apply.addEventListener("click", () => {
             this.dispatchEvent(new CustomEvent("valueSelected", {
                 detail: {
@@ -175,7 +301,33 @@ class ClassHelper extends HTMLElement {
             }))
         })
 
+        div.innerHTML = `<style>
+        #popup-control {
+            position: fixed;
+            display: block;
+            top: auto;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            padding: .5em;
+            border-top: 2px solid #444;
+            background-color: #eee;
+          }
+          
+          #popup-preview {
+            margin-right: 3em;
+            margin-left: 1em;
+          }
+          
+          #popup-control button {
+            margin-right: 2em;
+            margin-left: 2em;
+            width: 7em;
+          }
+          </style>
+          `;
         div.append(preview, cancel, apply);
+                        
         fragment.appendChild(div);
 
         return fragment;
@@ -193,35 +345,36 @@ class ClassHelper extends HTMLElement {
         table.setAttribute("id", "popup-table");
         const thead = document.createElement('thead');
         const tbody = document.createElement('tbody');
-
+        const tfoot = document.createElement('tfoot'); // Create table footer
+    
         // Create table headers
         const headerRow = document.createElement('tr');
         let thx = document.createElement("th");
-        thx.textContent = "x";
-        headerRow.appendChild(thx)
-
+        thx.textContent = "X";
+        headerRow.appendChild(thx);
+    
         headers.forEach(header => {
             const th = document.createElement('th');
             th.textContent = header;
             headerRow.appendChild(th);
         });
         thead.appendChild(headerRow);
-
+    
         // Create table body with data
         data.forEach(entry => {
             const row = document.createElement('tr');
-
+    
             const checkbox = document.createElement("input");
             checkbox.setAttribute("type", "checkbox");
             row.appendChild(checkbox);
             row.style.cursor = "pointer";
-
+    
             headers.forEach(header => {
                 const td = document.createElement('td');
                 td.textContent = entry[header];
                 row.appendChild(td);
             });
-
+    
             row.addEventListener("click", () => {
                 checkbox.checked = !checkbox.checked;
                 this.dispatchEvent(new CustomEvent("selection", {
@@ -230,17 +383,72 @@ class ClassHelper extends HTMLElement {
                     }
                 }))
             });
-
+    
             tbody.appendChild(row);
         });
-
+    
+        // Create table footer with the same column values as headers
+        const footerRow = document.createElement('tr');
+        let footThx = document.createElement("th");
+        footThx.textContent = "X";
+        footerRow.appendChild(footThx);
+    
+        headers.forEach(header => {
+            const th = document.createElement('th');
+            th.textContent = header;
+            footerRow.appendChild(th);
+        });
+        tfoot.appendChild(footerRow);
+    
+        table.innerHTML = `
+            <style>
+                #popup-table {
+                    table-layout: fixed;
+                    overflow: hidden;
+                    font-size: .9em;
+                    padding-bottom: 3em;
+                }
+                
+                table th {
+                    font-weight: normal;
+                    text-align: left;
+                    color: #444;
+                    background-color: #efefef;
+                    border-bottom: 1px solid #afafaf;
+                    border-top: 1px solid #afafaf;
+                    text-transform: uppercase;
+                    vertical-align: middle;
+                    line-height:1.5em;
+                }
+                
+                table td {
+                    vertical-align: middle;
+                    padding-right: .2em;
+                    border-bottom: 1px solid #efefef;
+                    text-align: left;
+                    empty-cells: show;
+                    white-space: nowrap;
+                    vertical-align: middle;
+                }
+                
+                table tr:hover {
+                    background-color: #eee;
+                }
+            </style>
+        `;
+    
         // Assemble the table
         table.appendChild(thead);
         table.appendChild(tbody);
+        table.appendChild(tfoot); // Append the footer
+        
         fragment.appendChild(table);
-
+    
         return fragment;
     }
+    
+    
+
 
     connectedCallback() {
         /** @type {HTMLElement | null} */
