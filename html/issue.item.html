@@ -57,9 +57,8 @@
  <td>
   <span tal:replace="structure python:context.superseder.field(showid=1, size=20)" />
   <roundup-classhelper>
-    <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder', pagesize=2)" />
+    <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder')" />
   </roundup-classhelper>
-  <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder', pagesize=2)" />
   <span tal:condition="context/superseder">
    <br><span i18n:translate="">View:</span>
      <a tal:repeat="sup context/superseder"
@@ -74,8 +73,6 @@
     <span tal:condition="context/is_edit_ok" tal:replace="structure
     python:db.user.classhelp('username,realname,address', property='nosy', width='600')" />    
   </roundup-classhelper>
-  <span tal:condition="context/is_edit_ok" tal:replace="structure
-  python:db.user.classhelp('username,realname,address', property='nosy', width='600')" />    
 <br>
  </td>
 </tr>
@@ -89,7 +86,6 @@
   <roundup-classhelper>
     <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.keyword.classhelp(property='keyword')" />
   </roundup-classhelper>
-  <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.keyword.classhelp(property='keyword')" />
  </td>
 </tr>
 
