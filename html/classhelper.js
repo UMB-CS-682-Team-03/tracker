@@ -1,24 +1,25 @@
+const TRANSLATIONS = {
+    apply: "Apply",
+    cancel: "Cancel",
+    next: "Next",
+    previous: "Previous",
+    search: "Search",
+    reset: "Reset"
+}
+
 class ClassHelper extends HTMLElement {
     /** @type {Window} */
     popupRef = null;
 
     connectedCallback() {
-        let link = this.querySelectorAll("a");
-        if (link.length < 1 || link.length > 1) {
+        let links = this.querySelectorAll("a");
+        if (links.length != 1) {
             throw new Error("roundup-classhelper must wrap a single classhelp link");
         }
-        link = link.item(0);
+        let link = links.item(0);
         link.onclick = null;
 
         const linkProp = ClassHelper.parseLink(link);
-
-        /**
-         * @todo remove this after asking about the bug
-         */
-        if (linkProp.path == "user") {
-            linkProp.fields = ['username', 'realname', 'phone', 'organisation', 'roles'];
-        }
-
         const apiURL = ClassHelper.getRestURL(linkProp);
 
         // Listeners
@@ -27,11 +28,9 @@ class ClassHelper extends HTMLElement {
             this.openPopUp(apiURL, linkProp);
         });
         this.addEventListener("nextPage", (event) => {
-            linkProp.pageIndex = (parseInt(linkProp.pageIndex) + 1).toString();
             this.pageChange(event.detail.url, linkProp);
         });
         this.addEventListener("prevPage", (event) => {
-            linkProp.pageIndex = (parseInt(linkProp.pageIndex) - 1).toString();
             this.pageChange(event.detail.url, linkProp);
         });
         this.addEventListener("valueSelected", (event) => {
@@ -39,7 +38,6 @@ class ClassHelper extends HTMLElement {
         });
         this.addEventListener("search", (event) => {
             const searchURL = ClassHelper.getSearchURL(linkProp, event.detail.data);
-
             this.searchEvent(searchURL, linkProp);
         });
         this.addEventListener("selection", (event) => {
@@ -102,7 +100,7 @@ class ClassHelper extends HTMLElement {
     }
 
     /** 
-     * from roundup docs rest api url - "{host}/{tracker}/rest/data/{class}"
+     * from roundup docs rest api url - "{host}/{tracker}            label.style.textTransform = "capitalize";label.style.textTransform = "capitalize";/rest/data/{class}"
      * we pass helpurl which is parsed from anchor tag and return a URL.
      * @param {Object} props
      * @param {string} props.path
@@ -150,26 +148,51 @@ class ClassHelper extends HTMLElement {
         form.setAttribute("id", "popup-search");
 
         const params = this.getAttribute("searchWith").split(',');
+
+        const table = document.createElement("table");
+
         for (var param of params) {
-            const prop = document.createElement("div");
+            const row = document.createElement("tr");
+            const labelCell = document.createElement("td");
+            const inputCell = document.createElement("td");
+
+            const label = document.createElement("label");
+            label.textContent = param + ":";
+            label.setAttribute("for", param);
+            label.style.textTransform = "capitalize";
+
+            if (param === "username" || param === "phone" || param === "roles") {
+                label.style.fontWeight = "bold";
+            }
+
             const input = document.createElement("input");
             input.setAttribute("name", param);
-            const label = document.createElement("label");
-            label.textContent = param;
-            label.setAttribute("for", param);
+            input.setAttribute("id", param);
 
-            prop.appendChild(label);
-            prop.appendChild(input);
-            form.appendChild(prop);
+            labelCell.appendChild(label);
+            row.appendChild(labelCell);
+
+            inputCell.appendChild(input);
+            row.appendChild(inputCell);
+
+            table.appendChild(row);
         }
 
-        const search = document.createElement("button");
-        search.textContent = "Search";
-        const reset = document.createElement("button");
-        reset.textContent = "Reset";
+        // Add an empty row
+        const emptyRow = document.createElement("tr");
+        const emptyCell = document.createElement("td");
+        emptyRow.appendChild(emptyCell);
+        table.appendChild(emptyRow);
 
+        // Add search and reset buttons
+        const buttonRow = document.createElement("tr");
+        const buttonCell = document.createElement("td");
+        buttonCell.colSpan = 2;
+
+        const search = document.createElement("button");
+        search.textContent = TRANSLATIONS.search;
         search.addEventListener("click", (e) => {
-            e.preventDefault()
+            e.preventDefault();
             let fd = new FormData(form);
             this.dispatchEvent(new CustomEvent("search", {
                 detail: {
@@ -178,14 +201,19 @@ class ClassHelper extends HTMLElement {
             }));
         });
 
+        const reset = document.createElement("button");
+        reset.textContent = TRANSLATIONS.reset;
         reset.addEventListener("click", (e) => {
             e.preventDefault();
             form.reset();
-        })
+        });
 
-        form.appendChild(search);
-        form.appendChild(reset);
+        buttonCell.appendChild(search);
+        buttonCell.appendChild(reset);
+        buttonRow.appendChild(buttonCell);
+        table.appendChild(buttonRow);
 
+        form.appendChild(table);
         fragment.appendChild(form);
 
         return fragment;
@@ -206,11 +234,11 @@ class ClassHelper extends HTMLElement {
                     }
                 }));
             });
-            a.textContent = `<<previous`;
+            a.textContent = "<<" + TRANSLATIONS.previous;
             prev.appendChild(a);
         }
         const info = document.createElement('td');
-        info.textContent = `${index}..${parseInt(index) * parseInt(size)}`;
+        info.textContent = `${1 + (parseInt(index) - 1) * parseInt(size)}..${parseInt(index) * parseInt(size)}`;
         const next = document.createElement('td');
         if (nextUrl) {
             const a = document.createElement('button');
@@ -221,7 +249,7 @@ class ClassHelper extends HTMLElement {
                     }
                 }));
             });
-            a.textContent = `next>>`;
+            a.textContent = TRANSLATIONS.next + ">>";
             next.appendChild(a);
         }
 
@@ -242,13 +270,14 @@ class ClassHelper extends HTMLElement {
         preview.name = "preview";
 
         const cancel = document.createElement("button");
-        cancel.textContent = "Cancel";
+        cancel.textContent = TRANSLATIONS.cancel;
         cancel.addEventListener("click", () => {
             preview.value = "";
         })
 
         const apply = document.createElement("button");
-        apply.textContent = "Apply";
+        apply.textContent = TRANSLATIONS.apply;
+        apply.style.fontWeight = "bold";
         apply.addEventListener("click", () => {
             this.dispatchEvent(new CustomEvent("valueSelected", {
                 detail: {
@@ -257,8 +286,35 @@ class ClassHelper extends HTMLElement {
             }))
         })
 
+        const style = document.createElement("style");
+
+        style.textContent = `
+        #popup-control {
+            position: fixed;
+            display: block;
+            top: auto;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            padding: .5em;
+            border-top: 2px solid #444;
+            background-color: #eee;
+          }
+          
+          #popup-preview {
+            margin-right: 3em;
+            margin-left: 1em;
+          }
+          
+          #popup-control button {
+            margin-right: 2em;
+            margin-left: 2em;
+            width: 7em;
+          }`;
+
         div.append(preview, cancel, apply);
-        fragment.appendChild(div);
+
+        fragment.appendChild(div, style);
 
         return fragment;
     }
@@ -275,12 +331,13 @@ class ClassHelper extends HTMLElement {
         table.setAttribute("id", "popup-table");
         const thead = document.createElement('thead');
         const tbody = document.createElement('tbody');
+        const tfoot = document.createElement('tfoot'); // Create table footer
 
         // Create table headers
         const headerRow = document.createElement('tr');
         let thx = document.createElement("th");
-        thx.textContent = "x";
-        headerRow.appendChild(thx)
+        thx.textContent = "X";
+        headerRow.appendChild(thx);
 
         headers.forEach(header => {
             const th = document.createElement('th');
@@ -316,9 +373,61 @@ class ClassHelper extends HTMLElement {
             tbody.appendChild(row);
         });
 
+        // Create table footer with the same column values as headers
+        const footerRow = document.createElement('tr');
+        let footThx = document.createElement("th");
+        footThx.textContent = "X";
+        footerRow.appendChild(footThx);
+
+        headers.forEach(header => {
+            const th = document.createElement('th');
+            th.textContent = header;
+            footerRow.appendChild(th);
+        });
+        tfoot.appendChild(footerRow);
+
+        table.innerHTML = `
+            <style>
+                #popup-table {
+                    table-layout: fixed;
+                    overflow: hidden;
+                    font-size: .9em;
+                    padding-bottom: 3em;
+                }
+                
+                table th {
+                    font-weight: normal;
+                    text-align: left;
+                    color: #444;
+                    background-color: #efefef;
+                    border-bottom: 1px solid #afafaf;
+                    border-top: 1px solid #afafaf;
+                    text-transform: uppercase;
+                    vertical-align: middle;
+                    line-height:1.5em;
+                }
+                
+                table td {
+                    vertical-align: middle;
+                    padding-right: .2em;
+                    border-bottom: 1px solid #efefef;
+                    text-align: left;
+                    empty-cells: show;
+                    white-space: nowrap;
+                    vertical-align: middle;
+                }
+                
+                table tr:hover {
+                    background-color: #eee;
+                }
+            </style>
+        `;
+
         // Assemble the table
         table.appendChild(thead);
         table.appendChild(tbody);
+        table.appendChild(tfoot); // Append the footer
+
         fragment.appendChild(table);
 
         return fragment;
@@ -382,6 +491,8 @@ class ClassHelper extends HTMLElement {
             if (nextURL) {
                 nextURL = nextURL[0].uri;
             }
+            let selfUrl = new URL(data["@links"].self[0].uri);
+            props.pageIndex = selfUrl.searchParams.get("@page_index");
 
             let oldPagination = this.popupRef.document.getElementById("popup-pagination");
             b.replaceChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize), oldPagination);

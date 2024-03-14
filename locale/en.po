@@ -1,0 +1,8 @@
+msgid "Submit"
+msgstr "Go"
+
+msgid "Next"
+msgstr ">"
+
+msgid "Prev"
+msgstr "<"

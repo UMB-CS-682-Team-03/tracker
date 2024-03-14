@@ -1,0 +1,11 @@
+msgid "Submit"
+msgstr "gehen"
+
+msgid "Next"
+msgstr ">"
+
+msgid "Prev"
+msgstr "<"
+
+msgid "Hello World - \"New Programmer\""
+msgstr "Hallo Welt - \"neuer Programmierer\""

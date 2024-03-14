@@ -1,0 +1,18 @@
+<tal xmlns:tal="http://xml.zope.org/namespaces/tal" tal:omit-tag="true">
+<tal:block tal:omit-tag="true">
+    {
+        "Apply": "<tal:x tal:replace="python:i18n.gettext('Apply')" />",
+        "Cancel": "<tal:x tal:replace="python:i18n.gettext('Cancel')" />",
+        "Next": "<tal:x tal:replace="python:i18n.gettext('Next')" />",
+        "Prev": "<tal:x tal:replace="python:i18n.gettext('Prev')" />",
+        "Search": "<tal:x tal:replace="python:i18n.gettext('Search')" />",
+        "Reset": "<tal:x tal:replace="python:i18n.gettext('Reset')" />",
+        "Submit": "<tal:x tal:replace="python:i18n.gettext('Login')" />",
+        "Hello World - \"New Programmer\"": "<tal:x tal:replace="python:i18n.gettext('Hello World - &quot;New Programmer&quot;')" />",
+        <tal:loop tal:omit-tag="true" tal:repeat="field python:request.form['properties'].value.split(',')">
+        "<tal:x tal:replace="field" />": "<tal:x tal:replace="python:i18n.gettext(field)" />"
+        <tal:x tal:condition="python:not repeat['field'].end" tal:content="string:," />
+        </tal:loop>
+    }
+</tal:block>
+</tal>
