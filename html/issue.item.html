@@ -57,7 +57,7 @@
  <td>
   <span tal:replace="structure python:context.superseder.field(showid=1, size=20)" />
   <roundup-classhelper>
-    <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder', pagesize=10)" />
+    <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder', pagesize=10, width='650')" />
   </roundup-classhelper>
   <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder')" />
   <span tal:condition="context/superseder">
@@ -72,8 +72,11 @@
   <span tal:replace="structure context/nosy/field" />
   <roundup-classhelper searchWith="username,phone,roles">
     <span tal:condition="context/is_edit_ok" tal:replace="structure
-    python:db.user.classhelp('username,realname,address', property='nosy', width='600')" />    
+    python:db.user.classhelp('username,realname,address', property='nosy', width='650')" />    
   </roundup-classhelper>
+
+  <span tal:condition="context/is_edit_ok" tal:replace="structure
+    python:db.user.classhelp('username,realname,address', property='nosy', width='650')" /> 
 <br>
  </td>
 </tr>
@@ -87,7 +90,7 @@
   <roundup-classhelper>
     <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.keyword.classhelp(property='keyword')" />
   </roundup-classhelper>
- </td>
+ </td>  
 </tr>
 
 <tr tal:condition="context/is_edit_ok">
