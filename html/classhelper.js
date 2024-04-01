@@ -142,231 +142,6 @@ class ClassHelper extends HTMLElement {
         return url;
     }
 
-    // getSearchFragment() {
-    //     const fragment = document.createDocumentFragment();
-        
-    //     const divsearch = document.createElement("div");
-    //     divsearch.setAttribute("id", "popup-divsearch");
-        
-    //     const form = document.createElement("form");
-    //     form.setAttribute("id", "popup-search");
-
-    //     const params = this.getAttribute("searchWith").split(',');
-
-    //     const table = document.createElement("table");
-
-    //     for (var param of params) {
-    //         const row = document.createElement("tr");
-    //         const labelCell = document.createElement("td");
-    //         const inputCell = document.createElement("td");
-
-    //         const label = document.createElement("label");
-    //         label.textContent = param + ":";
-    //         label.setAttribute("for", param);
-    //         label.style.textTransform = "capitalize";
-
-    //         if (param === "username" || param === "phone" || param === "roles") {
-    //             label.style.fontWeight = "bold";
-    //         }
-
-    //         const input = document.createElement("input");
-    //         input.setAttribute("name", param);
-    //         input.setAttribute("id", param);
-
-    //         labelCell.appendChild(label);
-    //         row.appendChild(labelCell);
-
-    //         inputCell.appendChild(input);
-    //         row.appendChild(inputCell);
-
-    //         const rowWrapper = document.createElement("div");
-    //         rowWrapper.style.display = "flex";
-    //         rowWrapper.style.flexDirection = "row";
-    //          rowWrapper.style.justifyContent = "flex-end"; 
-    //         // rowWrapper.style.alignItems = "center";
-    //         rowWrapper.appendChild(row);
-
-
-    //         table.appendChild(rowWrapper);
-    //     }
-
-    //     // Add an empty row
-    //     const emptyRow = document.createElement("tr");
-    //     const emptyCell = document.createElement("td");
-    //     emptyRow.appendChild(emptyCell);
-    //     table.appendChild(emptyRow);
-
-    //     // Add search and reset buttons
-    //     const buttonRow = document.createElement("tr");
-    //     const buttonCell = document.createElement("td");
-    //     buttonCell.colSpan = 2;
-
-    //     const search = document.createElement("button");
-    //     search.textContent = TRANSLATIONS.search;
-    //     search.addEventListener("click", (e) => {
-    //         e.preventDefault();
-    //         let fd = new FormData(form);
-    //         this.dispatchEvent(new CustomEvent("search", {
-    //             detail: {
-    //                 data: fd
-    //             }
-    //         }));
-    //     });
-
-    //     const reset = document.createElement("button");
-    //     reset.textContent = TRANSLATIONS.reset;
-    //     reset.addEventListener("click", (e) => {
-    //         e.preventDefault();
-    //         form.reset();
-    //     });
-
-    //     const style = document.createElement("style");
-    //     style.textContent = `
-    //         #popup-search {
-    //         position: fixed;
-    //         overflow: hidden;
-    //         top: 0;
-    //         left: 0;
-    //         width: 100%;
-    //         background-color: #fff; /* Optional: Adjust background color as needed */
-    //         // padding: 10px; /* Optional: Adjust padding as needed */
-    //         border-bottom: 2px solid #444;
-    //     }
-    //     `;
-    //     buttonCell.appendChild(search);
-    //     buttonCell.appendChild(reset);
-    //     buttonRow.appendChild(buttonCell);
-    //     const buttonRowWrapper = document.createElement("div");
-    // buttonRowWrapper.style.display = "flex";
-    // buttonRowWrapper.style.flexDirection = "row";
-    // buttonRowWrapper.appendChild(buttonRow);
-    // table.appendChild(buttonRowWrapper);
-
-    //     //table.appendChild(buttonRow);
-
-    //     form.appendChild(table);
-    //     form.appendChild(style);
-
-    //     divsearch.appendChild(form);
-    //     fragment.appendChild(divsearch);
-
-    //     return fragment;
-//}
-    // getSearchFragment() {
-    //     const fragment = document.createDocumentFragment();
-        
-    //     const divsearch = document.createElement("div");
-    //     divsearch.setAttribute("id", "popup-divsearch");
-        
-    //     const form = document.createElement("form");
-    //     form.setAttribute("id", "popup-search");
-    
-    //     const params = this.getAttribute("searchWith").split(',');
-    
-    //     const table = document.createElement("table");
-    
-    //     for (var param of params) {
-    //         const row = document.createElement("tr");
-    //         const labelCell = document.createElement("td");
-    //         const inputCell = document.createElement("td");
-    
-    //         const label = document.createElement("label");
-    //         label.textContent = param + ":";
-    //         label.setAttribute("for", param);
-    //         label.style.textTransform = "capitalize";
-    
-    //         if (param === "username" || param === "phone" || param === "roles") {
-    //             label.style.fontWeight = "bold";
-    //         }
-    
-    //         const input = document.createElement("input");
-    //         input.setAttribute("name", param);
-    //         input.setAttribute("id", param);
-    
-    //         labelCell.appendChild(label);
-    //         row.appendChild(labelCell);
-    
-    //         inputCell.appendChild(input);
-    //         row.appendChild(inputCell);
-    
-    //         // Wrap the row in a div with flexbox and justify content as flex-end
-    //         const rowWrapper = document.createElement("div");
-    //         rowWrapper.style.display = "flex";
-    //         rowWrapper.style.flexDirection = "row";
-    //         rowWrapper.style.justifyContent = "flex-end"; 
-    //         rowWrapper.appendChild(row);
-    
-    //         // Append the wrapped row to the table
-    //         table.appendChild(rowWrapper);
-    //     }
-    
-    //     // Add an empty row
-    //     const emptyRow = document.createElement("tr");
-    //     const emptyCell = document.createElement("td");
-    //     emptyRow.appendChild(emptyCell);
-    //     const emptyRowWrapper = document.createElement("div");
-    //     emptyRowWrapper.style.display = "flex";
-    //     emptyRowWrapper.style.flexDirection = "row";
-    //     emptyRowWrapper.appendChild(emptyRow);
-    //     table.appendChild(emptyRowWrapper);
-    
-    //     // Add search and reset buttons
-    //     const buttonRow = document.createElement("tr");
-    //     const buttonCell = document.createElement("td");
-    //     buttonCell.colSpan = 2;
-    
-    //     const search = document.createElement("button");
-    //     search.textContent = TRANSLATIONS.search;
-    //     search.addEventListener("click", (e) => {
-    //         e.preventDefault();
-    //         let fd = new FormData(form);
-    //         this.dispatchEvent(new CustomEvent("search", {
-    //             detail: {
-    //                 data: fd
-    //             }
-    //         }));
-    //     });
-    
-    //     const reset = document.createElement("button");
-    //     reset.textContent = TRANSLATIONS.reset;
-    //     reset.style.marginLeft = "67px";
-    //     reset.addEventListener("click", (e) => {
-    //         e.preventDefault();
-    //         form.reset();
-    //     });
-    
-    //     const style = document.createElement("style");
-    //     style.textContent = `
-    //         #popup-search {
-    //         position: fixed;
-    //         overflow: hidden;
-    //         top: 0;
-    //         left: 0;
-    //         width: 100%;
-    //         background-color: #fff; /* Optional: Adjust background color as needed */
-    //         // padding: 10px; /* Optional: Adjust padding as needed */
-    //         border-bottom: 2px solid #444;
-    //     }
-    //     `;
-    
-    //     buttonCell.appendChild(search);
-    //     buttonCell.appendChild(reset);
-    //     buttonRow.appendChild(buttonCell);
-    //     const buttonRowWrapper = document.createElement("div");
-    //     buttonRowWrapper.style.display = "flex";
-    //     buttonRowWrapper.style.flexDirection = "row";
-    //     buttonRowWrapper.style.justifyContent = "flex-end"; // Align buttons to the right side
-    //     buttonRowWrapper.appendChild(buttonRow);
-    //     table.appendChild(buttonRowWrapper);
-    
-    //     form.appendChild(table);
-    //     form.appendChild(style);
-    
-    //     divsearch.appendChild(form);
-    //     fragment.appendChild(divsearch);
-    
-    //     return fragment;
-    // }
 
     getSearchFragment() {
         const fragment = document.createDocumentFragment();
@@ -410,21 +185,15 @@ class ClassHelper extends HTMLElement {
     
             table.appendChild(row);
         }
-        
-        // Add an empty row
-        const emptyRow = document.createElement("tr");
-        const emptyCell = document.createElement("td");
-        emptyRow.appendChild(emptyCell);
-        table.appendChild(emptyRow);
     
         // Add search and reset buttons
         const buttonRow = document.createElement("tr");
+        const emptyButtonCell = document.createElement("td");
         const buttonCell = document.createElement("td");
-        buttonCell.colSpan = 2;
+        buttonCell.colSpan = 1;
     
         const search = document.createElement("button");
         search.textContent = TRANSLATIONS.search;
-        search.style.marginLeft = "75px";
         search.classList.add("search-button"); // Add class for styling
         search.addEventListener("click", (e) => {
             e.preventDefault();
@@ -438,7 +207,7 @@ class ClassHelper extends HTMLElement {
     
         const reset = document.createElement("button");
         reset.textContent = TRANSLATIONS.reset;
-        reset.style.marginLeft = "70px";
+        reset.style.marginLeft = "60px";
         reset.classList.add("reset-button"); // Add class for styling
         reset.addEventListener("click", (e) => {
             e.preventDefault();
@@ -463,7 +232,9 @@ class ClassHelper extends HTMLElement {
     
         buttonCell.appendChild(search);
         buttonCell.appendChild(reset);
+        buttonRow.appendChild(emptyButtonCell);
         buttonRow.appendChild(buttonCell);
+        
         table.appendChild(buttonRow);
     
         form.appendChild(table);
@@ -689,6 +460,7 @@ class ClassHelper extends HTMLElement {
         const footerRow = document.createElement('tr');
         let footThx = document.createElement("th");
         footThx.textContent = "X";
+        footThx.style.paddingLeft = "0.3em";
         footerRow.appendChild(footThx);
 
         headers.forEach(header => {
@@ -704,6 +476,8 @@ class ClassHelper extends HTMLElement {
             max-height: 350px; /* Adjust the maximum height as needed */
             overflow-y: auto; /* Enable vertical scrolling */
         }    
+
+        
         
         #check, #tableid{
             width: 10px;
@@ -729,6 +503,7 @@ class ClassHelper extends HTMLElement {
             table th {
                 font-weight: normal;
                 text-align: left;
+                padding-left: .3em;
                 color: #444;
                 background-color: #efefef;
                 border-bottom: 1px solid #afafaf;
@@ -740,6 +515,7 @@ class ClassHelper extends HTMLElement {
         
             table td {
                 vertical-align: middle;
+                padding-left: .3em;
                 padding-right: .2em;
                 border-bottom: 1px solid #efefef;
                 text-align: left;
@@ -804,86 +580,6 @@ class ClassHelper extends HTMLElement {
                 nextURL = nextURL[0].uri;
             }
 
-            // const b = this.popupRef.document.body;
-            // const tableFragment = this.getTableFragment(props.fields, data.collection);
-
-            // if (this.getAttribute("searchWith")) {
-            //     b.appendChild(this.getSearchFragment());
-            //     tableFragment.style.marginTop = "20px";
-            // }
-            // b.appendChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize));
-            // b.appendChild(tableFragment);
-            // b.appendChild(this.getAccumulatorFragment());
-
-        //     const b = this.popupRef.document.body;
-        // if (this.getAttribute("searchWith")) {
-        //     b.appendChild(this.getSearchFragment());
-        // }
-        // b.appendChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize));
-
-        // // Conditionally add table fragment with or without top margin
-        // const tableFragment = this.getTableFragment(props.fields, data.collection);
-        // if (this.getAttribute("searchWith")) {
-        //     b.appendChild(tableFragment);
-        // } else {
-        //     const styledTableFragment = document.createElement("div");
-        //     styledTableFragment.style.marginTop = "0px";
-        //     styledTableFragment.appendChild(tableFragment);
-        //     b.appendChild(styledTableFragment);
-        // }
-
-        // b.appendChild(this.getAccumulatorFragment());
-        
-        
-        
-        
-        
-        // const b = this.popupRef.document.body;
-        // if (this.getAttribute("searchWith")) {
-        //     b.appendChild(this.getSearchFragment());
-        // }
-        // b.appendChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize));
-
-        // // Conditionally add styled table fragment with or without top margin
-        // const tableFragment = this.getTableFragment(props.fields, data.collection);
-        // const styledTableFragment = document.createElement("div");
-        // styledTableFragment.style.marginTop = "0px";
-        // styledTableFragment.style.position = "relative"; // Ensures fragment remains beneath search fragment
-
-        // if (this.getAttribute("searchWith")) {
-        //     styledTableFragment.appendChild(tableFragment);
-        //     b.appendChild(styledTableFragment);
-        // } else {
-        //     b.appendChild(styledTableFragment);
-        //     styledTableFragment.appendChild(tableFragment);
-        // }
-
-        // // Apply opacity to search fragment on scroll
-        // const searchFragment = b.querySelector("[data-component='search-fragment']");
-        // if (searchFragment) {
-        //     b.addEventListener("scroll", () => {
-        //         const scrollTop = b.scrollTop;
-        //         const searchFragmentHeight = searchFragment.offsetHeight;
-        //         const opacity = Math.min(1, scrollTop / searchFragmentHeight);
-        //         searchFragment.style.opacity = opacity;
-        //     });
-        // }
-
-        // b.appendChild(this.getAccumulatorFragment());
-
-        // const container = document.createElement("div");
-        // container.setAttribute("id", "container");
-        // const style = document.createElement("style");
-        // style.textContent = `
-        //     #container {
-        //     display: flex;
-        //     flex-direction: column;
-        //     justify-content: space-around;
-        //     alignItems: center;
-        // }
-        // `;
-        // container.appendChild(style);
-
         const container = document.createElement("div");
         container.style.display = "flex";
         container.style.flexDirection = "column";
@@ -914,10 +610,12 @@ class ClassHelper extends HTMLElement {
             //b.appendChild(styledTableFragment);
         }
         container.appendChild(this.getAccumulatorFragment());
+        // container.style.overflow = "hidden";
         // container.appendChild(style);
         
         //b.appendChild(this.getAccumulatorFragment());
         b.appendChild(container);
+        b.style.overflow = "hidden";
     })
     }
 
