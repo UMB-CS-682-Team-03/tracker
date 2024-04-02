@@ -1,15 +1,7 @@
-const TRANSLATIONS = {
-    apply: "Apply",
-    cancel: "Cancel",
-    next: "Next",
-    previous: "Previous",
-    search: "Search",
-    reset: "Reset"
-}
-
 class ClassHelper extends HTMLElement {
     /** @type {Window} */
     popupRef = null;
+    static translations = null;
 
     connectedCallback() {
         let links = this.querySelectorAll("a");
@@ -22,27 +14,67 @@ class ClassHelper extends HTMLElement {
         const linkProp = ClassHelper.parseLink(link);
         const apiURL = ClassHelper.getRestURL(linkProp);
 
+        ClassHelper.fetchTranslations();
+
         // Listeners
         link.addEventListener("click", (event) => {
             event.preventDefault();
             this.openPopUp(apiURL, linkProp);
         });
         this.addEventListener("nextPage", (event) => {
-            this.pageChange(event.detail.url, linkProp);
+            this.pageChange(event.detail.value, linkProp);
         });
         this.addEventListener("prevPage", (event) => {
-            this.pageChange(event.detail.url, linkProp);
+            this.pageChange(event.detail.value, linkProp);
         });
         this.addEventListener("valueSelected", (event) => {
             this.valueSelected(linkProp, event.detail.value);
         });
         this.addEventListener("search", (event) => {
-            const searchURL = ClassHelper.getSearchURL(linkProp, event.detail.data);
+            const searchURL = ClassHelper.getSearchURL(linkProp, event.detail.value);
             this.searchEvent(searchURL, linkProp);
         });
         this.addEventListener("selection", (event) => {
             this.selectionEvent(event.detail.value);
         });
+    }
+
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (name === "searchWith") {
+            if (oldValue === null) {
+                return;
+            }
+            let oldForm = this.popupRef.document.getElementById("popup-search");
+            let newForm = this.getSearchFragment();
+            this.popupRef.document.body.replaceChild(newForm, oldForm);
+        }
+    }
+
+    static async fetchTranslations() {
+        if (ClassHelper.translations != null) {
+            return;
+        }
+
+        let translations = {
+            "Apply": "",
+            "Cancel": "",
+            "Next": "",
+            "Prev": "",
+            "Search": "",
+            "Reset": "",
+            "Out": ""
+        };
+
+        let tracker = window.location.pathname.split('/')[1];
+        let url = new URL(window.location.origin + "/" + tracker);
+        url.searchParams.append("@template", "json");
+        url.searchParams.append("properties", Object.keys(translations).join(','));
+
+        let resp = await fetch(url);
+        if (!resp.ok) {
+            throw new Error("error fetching translations from roundup rest api");
+        }
+        ClassHelper.translations = await resp.json();
     }
 
     /**
@@ -190,19 +222,19 @@ class ClassHelper extends HTMLElement {
         buttonCell.colSpan = 2;
 
         const search = document.createElement("button");
-        search.textContent = TRANSLATIONS.search;
+        search.textContent = ClassHelper.translations["Search"];
         search.addEventListener("click", (e) => {
             e.preventDefault();
             let fd = new FormData(form);
             this.dispatchEvent(new CustomEvent("search", {
                 detail: {
-                    data: fd
+                    value: fd
                 }
             }));
         });
 
         const reset = document.createElement("button");
-        reset.textContent = TRANSLATIONS.reset;
+        reset.textContent = ClassHelper.translations["Reset"];
         reset.addEventListener("click", (e) => {
             e.preventDefault();
             form.reset();
@@ -230,11 +262,11 @@ class ClassHelper extends HTMLElement {
             a.addEventListener("click", () => {
                 this.dispatchEvent(new CustomEvent("prevPage", {
                     detail: {
-                        url: prevUrl
+                        value: prevUrl
                     }
                 }));
             });
-            a.textContent = "<<" + TRANSLATIONS.previous;
+            a.textContent = ClassHelper.translations["Prev"];
             prev.appendChild(a);
         }
         const info = document.createElement('td');
@@ -245,11 +277,11 @@ class ClassHelper extends HTMLElement {
             a.addEventListener("click", () => {
                 this.dispatchEvent(new CustomEvent("nextPage", {
                     detail: {
-                        url: nextUrl
+                        value: nextUrl
                     }
                 }));
             });
-            a.textContent = TRANSLATIONS.next + ">>";
+            a.textContent = ClassHelper.translations["Next"];
             next.appendChild(a);
         }
 
@@ -259,7 +291,7 @@ class ClassHelper extends HTMLElement {
         return fragment;
     }
 
-    getAccumulatorFragment() {
+    getAccumulatorFragment(preSelectedValues) {
         const fragment = document.createDocumentFragment();
         const div = document.createElement("div");
         div.setAttribute("id", "popup-control");
@@ -268,15 +300,22 @@ class ClassHelper extends HTMLElement {
         preview.setAttribute("id", "popup-preview");
         preview.type = "text";
         preview.name = "preview";
+        if (preSelectedValues.length > 0) {
+            preview.value = preSelectedValues.join(',');
+        }
 
         const cancel = document.createElement("button");
-        cancel.textContent = TRANSLATIONS.cancel;
+        cancel.textContent = ClassHelper.translations["Cancel"];
         cancel.addEventListener("click", () => {
-            preview.value = "";
+            this.dispatchEvent(new CustomEvent("valueSelected", {
+                detail: {
+                    value: preview.value
+                }
+            }));
         })
 
         const apply = document.createElement("button");
-        apply.textContent = TRANSLATIONS.apply;
+        apply.textContent = ClassHelper.translations["Apply"];
         apply.style.fontWeight = "bold";
         apply.addEventListener("click", () => {
             this.dispatchEvent(new CustomEvent("valueSelected", {
@@ -325,7 +364,7 @@ class ClassHelper extends HTMLElement {
      * @param {Object.<string, any>[]} data 
      * @returns 
      */
-    getTableFragment(headers, data) {
+    getTableFragment(headers, data, preSelectedValues) {
         const fragment = document.createDocumentFragment();
         const table = document.createElement('table');
         table.setAttribute("id", "popup-table");
@@ -354,6 +393,9 @@ class ClassHelper extends HTMLElement {
             checkbox.setAttribute("type", "checkbox");
             row.appendChild(checkbox);
             row.style.cursor = "pointer";
+            if (preSelectedValues.includes(entry[headers[0]])) {
+                checkbox.checked = true;
+            }
 
             headers.forEach(header => {
                 const td = document.createElement('td');
@@ -448,6 +490,12 @@ class ClassHelper extends HTMLElement {
 
         this.popupRef = window.open("about:blank", "_blank", popupFeatures);
 
+        const input = document.getElementsByName(props.formProperty)[0];
+        let preSelectedValues = [];
+        if (input.value) {
+            preSelectedValues = input.value.split(',');
+        }
+
         const json = fetch(apiURL).then(resp => {
             if (!resp.ok) {
                 throw new Error("error fetching data from roundup rest api");
@@ -474,13 +522,15 @@ class ClassHelper extends HTMLElement {
                 b.appendChild(this.getSearchFragment());
             }
             b.appendChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize));
-            b.appendChild(this.getTableFragment(props.fields, data.collection));
-            b.appendChild(this.getAccumulatorFragment());
+            b.appendChild(this.getTableFragment(props.fields, data.collection, preSelectedValues));
+            b.appendChild(this.getAccumulatorFragment(preSelectedValues));
         })
 
     }
 
     pageChange(apiURL, props) {
+        let preSelectedValues = this.popupRef.document.getElementById("popup-preview").value.split(",");
+
         fetch(apiURL).then(resp => resp.json()).then(({ data }) => {
             const b = this.popupRef.document.body;
             let prevURL = data["@links"].prev ?? null;
@@ -497,7 +547,7 @@ class ClassHelper extends HTMLElement {
             let oldPagination = this.popupRef.document.getElementById("popup-pagination");
             b.replaceChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize), oldPagination);
             let oldTable = this.popupRef.document.getElementById("popup-table");
-            b.replaceChild(this.getTableFragment(props.fields, data.collection), oldTable);
+            b.replaceChild(this.getTableFragment(props.fields, data.collection, preSelectedValues), oldTable);
         });
     }
 
@@ -533,4 +583,15 @@ class ClassHelper extends HTMLElement {
     }
 }
 
-customElements.define("roundup-classhelper", ClassHelper);
+function enableClassHelper() {
+    if (document.URL.endsWith("#classhelper-wc-toggle")) {
+        return;
+    }
+
+    /**@todo - make api call? get 404 then early return? */
+    // http://localhost/demo/rest
+
+    customElements.define("roundup-classhelper", ClassHelper);
+}
+
+enableClassHelper();

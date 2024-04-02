@@ -1,3 +1,18 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Roundup 2.3.0\n"
+"Report-Msgid-Bugs-To: roundup-devel@lists.sourceforge.net\n"
+"POT-Creation-Date: 2023-07-12 22:51-0400\n"
+"PO-Revision-Date: 2016-04-11 09:13+0200\n"
+"Last-Translator: Tobias Herp <tobias.herp@gmx.de>\n"
+"Language-Team: German Translators <roundup-devel@lists.sourceforge.net>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Poedit-Bookmarks: 75,-1,-1,-1,-1,-1,-1,-1,-1,-1\n"
+
 msgid "Submit"
 msgstr "gehen"
 
@@ -7,5 +22,14 @@ msgstr ">"
 msgid "Prev"
 msgstr "<"
 
-msgid "Hello World - \"New Programmer\""
-msgstr "Hallo Welt - \"neuer Programmierer\""
+msgid "Apply"
+msgstr "anwenden"
+
+msgid "Cancel"
+msgstr "stornieren"
+
+msgid "Search"
+msgstr "suchen"
+
+msgid "Reset"
+msgstr "zurücksetzen"

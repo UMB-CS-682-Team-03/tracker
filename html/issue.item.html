@@ -59,7 +59,7 @@
   <roundup-classhelper>
     <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder', pagesize=10)" />
   </roundup-classhelper>
-  <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder')" />
+  <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder', pagesize=10)" />
   <span tal:condition="context/superseder">
    <br><span i18n:translate="">View:</span>
      <a tal:repeat="sup context/superseder"
