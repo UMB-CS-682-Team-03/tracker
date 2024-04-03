@@ -2,3 +2,4 @@ db
 config.ini
 config.bak
 TEMPLATE-INFO.txt
+*.mo
