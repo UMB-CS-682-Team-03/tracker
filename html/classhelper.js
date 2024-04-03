@@ -22,19 +22,21 @@ class ClassHelper extends HTMLElement {
     connectedCallback() {
         /** @type {HTMLAnchorElement} */
         let link;
+
+        /** @type {ClassHelperProps} */
+        let properties;
+
         try {
             link = this.findClassHelpLink();
         } catch (e) {
             console.error(e.message);
             return;
         }
+
         let script = link.getAttribute("onclick");
         link.setAttribute("onclick", "");
         const preventDefault = e => e.preventDefault();
         link.addEventListener("click", preventDefault);
-
-        /** @type {ClassHelperProps} */
-        let properties;
 
         try {
             properties = ClassHelper.initializeProps(link);
@@ -347,10 +349,6 @@ class ClassHelper extends HTMLElement {
 
     getPaginationFragment(prevUrl, nextUrl, index, size) {
         const fragment = document.createDocumentFragment();
-
-        const divtable = document.createElement('div');
-        divtable.setAttribute("id", "popup-divtable");
-
         const table = document.createElement('table');
         table.setAttribute("id", "popup-pagination");
         const tr = document.createElement('tr');
@@ -422,9 +420,7 @@ class ClassHelper extends HTMLElement {
         table.appendChild(tr);
         table.appendChild(style);   //In a single file(using)
 
-        divtable.appendChild(table);
-
-        fragment.appendChild(divtable);
+        fragment.appendChild(table);
         return fragment;
     }
 
@@ -466,7 +462,6 @@ class ClassHelper extends HTMLElement {
 
         style.textContent = `
         #popup-control {
-            position: fixed;
             display: block;
             top: auto;
             right: 0;
@@ -583,8 +578,7 @@ class ClassHelper extends HTMLElement {
         const style = document.createElement("style");
         style.textContent = `
         #popup-divtable {
-            max-height: 350px; /* Adjust the maximum height as needed */
-            overflow-y: auto; /* Enable vertical scrolling */
+            overflow: auto;
         }    
 
         #check, #tableid{
@@ -592,16 +586,7 @@ class ClassHelper extends HTMLElement {
         }
 
         #popup-table {
-                //  position: absolute;
-                // // margin-top: 90px;
-                // table-layout: fixed;
-                // overflow: scroll;
-                // font-size: .9em;
-                // padding-bottom: 3em;
-
                 table-layout: fixed; /* compromises quality for speed   */
-                //overflow: hidden;
-                //overflow-y: auto; /* Enable vertical scrolling */
                 max-height: 100px;
                 width: 100%;
                 font-size: .9em;
@@ -697,8 +682,8 @@ class ClassHelper extends HTMLElement {
             const container = document.createElement("div");
             container.style.display = "flex";
             container.style.flexDirection = "column";
-            container.style.justifyContent = "space-around";
-            //container.style.alignItems = "center";
+            container.style.justifyContent = "space-between";
+            container.style.height = "100%";
 
             const b = this.popupRef.document.body;
             if (this.getAttribute("searchWith")) {
@@ -717,11 +702,7 @@ class ClassHelper extends HTMLElement {
                 container.appendChild(styledTableFragment);
                 //b.appendChild(styledTableFragment);
             } else {
-                const styledTableFragment = document.createElement("div");
-                //styledTableFragment.style.marginTop = "0px";
-                styledTableFragment.appendChild(tableFragment);
-                container.appendChild(styledTableFragment);
-                //b.appendChild(styledTableFragment);
+                container.appendChild(tableFragment);
             }
             container.appendChild(this.getAccumulatorFragment(preSelectedValues));
             // container.style.overflow = "hidden";
@@ -729,7 +710,6 @@ class ClassHelper extends HTMLElement {
 
             //b.appendChild(this.getAccumulatorFragment());
             b.appendChild(container);
-            b.style.overflow = "hidden";
         })
     }
 
@@ -750,11 +730,10 @@ class ClassHelper extends HTMLElement {
             props.pageIndex = selfUrl.searchParams.get("@page_index");
 
             let oldPagination = this.popupRef.document.getElementById("popup-pagination");
-            let p = oldPagination.parentElement;
-            p.replaceChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize), oldPagination);
+            oldPagination.parentElement.replaceChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize), oldPagination);
             let oldTable = this.popupRef.document.getElementById("popup-table");
-            let q = oldTable.parentElement;
-            q.replaceChild(this.getTableFragment(props.fields, data.collection, preSelectedValues), oldTable);
+            let ancestor = oldTable.parentElement.parentElement;
+            ancestor.replaceChild(this.getTableFragment(props.fields, data.collection, preSelectedValues), oldTable);
         });
     }
 
