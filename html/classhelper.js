@@ -733,7 +733,7 @@ class ClassHelper extends HTMLElement {
             oldPagination.parentElement.replaceChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize), oldPagination);
             let oldTable = this.popupRef.document.getElementById("popup-table");
             let ancestor = oldTable.parentElement.parentElement;
-            ancestor.replaceChild(this.getTableFragment(props.fields, data.collection, preSelectedValues), oldTable);
+            ancestor.replaceChild(this.getTableFragment(props.fields, data.collection, preSelectedValues), oldTable.parentElement);
         });
     }
 
