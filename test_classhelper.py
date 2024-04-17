@@ -9,9 +9,6 @@ from selenium.webdriver.support import expected_conditions as EC
 class TestSuperseder(unittest.TestCase):
 
     def setUp(self):
-        # self.driver = webdriver.Firefox()
-        # self.driver.get("http://localhost:8917/")
-        # Initialize the Firefox driver with headless option setting to True.
         options = webdriver.FirefoxOptions()
         options.add_argument('--headless')
 
@@ -210,6 +207,7 @@ class TestNosy(unittest.TestCase):
         print("Test Case 2 -- success")
 
 
+
 class TestKeywords(unittest.TestCase):
     def setUp(self):
         # Initialize the Firefox driver with headless option setting to True.
@@ -282,17 +280,3 @@ class TestKeywords(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
-
-
-# Create a test suite
-test_suite = unittest.TestSuite()
-test_suite.addTest(TestNosy("test_demo"))
-test_suite.addTest(TestKeywords("test_demo1"))
-test_suite.addTest(TestSuperseder("test_Untitled"))
-
-
-# Run the test suite
-test_runner = unittest.TextTestRunner(verbosity=0)
-test_runner.run(test_suite)
