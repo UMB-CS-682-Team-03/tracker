@@ -564,7 +564,10 @@ class ClassHelper extends HTMLElement {
                 container.appendChild(this.getSearchFragment());
             }
             container.appendChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize));
+
+            const tableFragment = this.getTableFragment(props.fields, data.collection, preSelectedValues);
             const popupTable = document.createElement("div");
+            popupTable.appendChild(tableFragment);
             popupTable.setAttribute("class", "popup-table");
             container.appendChild(popupTable);
             const separator = document.createElement("div");
