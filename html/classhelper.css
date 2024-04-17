@@ -1,0 +1,145 @@
+.popup-divtable {
+    overflow: auto;
+}    
+
+#check, .tableid{
+    width: 10px;
+}
+
+
+.popup-table {
+    table-layout: fixed; /* compromises quality for speed   */
+    max-height: 100px;
+    width: 100%;
+    font-size: .9em;
+    padding-bottom: 3em;
+}   
+
+table th {
+    font-weight: normal;
+    text-align: left;
+    padding-left: .3em;
+    color: #444;
+    background-color: #efefef;
+    border-bottom: 1px solid #afafaf;
+    border-top: 1px solid #afafaf;
+    text-transform: uppercase;
+    vertical-align: middle;
+    line-height:1.5em;
+}
+
+table td {
+    vertical-align: middle;
+    padding-left: .3em;
+    padding-right: .2em;
+    border-bottom: 1px solid #efefef;
+    text-align: left;
+    empty-cells: show;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+table tr:hover {
+    background-color: #eee;
+    cursor: pointer;
+}
+
+.rowstyle{
+    cursor: pointer;
+}
+
+.tableheader{
+    width: 15px;
+}
+
+.footerstyle{
+    padding-left: 0.3em;
+}
+
+/* Accumulator */
+
+.popup-control {
+    display: block;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: .5em;
+    border-top: 2px solid #444;
+    background-color: #eee;
+}
+    
+.popup-preview {
+    margin-right: 3em;
+    margin-left: 1em;
+}
+    
+.popup-control button {
+    margin-right: 2em;
+    margin-left: 2em;
+    width: 7em;
+}
+    
+.acc-apply{
+    font-weight: bold;
+}
+
+/* Pagination */
+
+.popup-pagination:hover {
+    background-color: transparent;
+}      
+
+.popup-pagination th {
+    width: 33%;
+    border-style: hidden;
+    text-align: center;
+}
+
+.popup-pagination td {
+    border: none
+}
+
+.popup-pagination th:first-child {
+    text-align: left;
+}
+
+.popup-pagination th:last-child {
+    text-align: right;
+}
+
+/* Anchor tag styles */
+.popup-pagination button, #popup-pagination a:link {
+    color: blue;
+    text-decoration: none;
+}
+
+/* Define anchor tag styles on hover */
+.popup-pagination button:hover {
+    background-color: transparent;
+    cursor: pointer;
+}
+
+/* Search */
+.popup-search {
+    border-bottom: 2px solid #444;
+}
+
+.searchlabel {
+    text-transform: capitalize;
+}
+
+
+.resetmargin{
+    margin-left: 60px;
+}
+
+.flexcontainer{
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.separator{
+    flex-grow: 1;
+}

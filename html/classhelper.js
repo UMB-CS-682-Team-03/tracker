@@ -39,7 +39,7 @@ class ClassHelper extends HTMLElement {
         link.addEventListener("click", preventDefault);
 
         try {
-            properties = ClassHelper.initializeProps(link);
+            properties = ClassHelper.parseHelpUrlData(link);
         } catch (e) {
             // Failed parsing props -> reset, log and return.
             link.removeEventListener("click", preventDefault);
@@ -114,7 +114,7 @@ class ClassHelper extends HTMLElement {
     }
 
     /**
-     * 
+     * Find the anchor tag that provides the classhelp link.
      * @returns {HTMLAnchorElement}
      */
     findClassHelpLink() {
@@ -126,10 +126,11 @@ class ClassHelper extends HTMLElement {
     }
 
     /**
+     * This method parses the helpurl link to get the necessary data for the classhelper.
      * @param {HTMLAnchorElement} link
      * @returns {ClassHelperProps}
      */
-    static initializeProps(link) {
+    static parseHelpUrlData(link) {
         if (!link.dataset.helpurl) {
             throw new Error("roundup-classhelper link must have a data-helpurl attribute");
         }
@@ -266,10 +267,10 @@ class ClassHelper extends HTMLElement {
             const inputCell = document.createElement("td");
 
             const label = document.createElement("label");
+            label.setAttribute("class", "searchlabel");
             label.textContent = param + ":";
             label.setAttribute("for", param);
             label.classList.add("search-label"); // Add class for styling
-            label.style.textTransform = "capitalize"; // Apply text transformation
 
             if (param === "username" || param === "phone" || param === "roles") {
                 label.classList.add("bold-label"); // Add class for styling
@@ -310,28 +311,12 @@ class ClassHelper extends HTMLElement {
 
         const reset = document.createElement("button");
         reset.textContent = ClassHelper.translations["Reset"];
-        reset.style.marginLeft = "60px";
+        reset.setAttribute("class", "resetmargin");
         reset.classList.add("reset-button"); // Add class for styling
         reset.addEventListener("click", (e) => {
             e.preventDefault();
             form.reset();
         });
-
-        const style = document.createElement("style");
-        style.textContent = `
-            .popup-search {
-                position: fixed;
-                overflow: hidden;
-                top: 0;
-                left: 0;
-                width: 100%;
-                background-color: #fff; /* Optional: Adjust background color as needed */
-                // padding: 10px; /* Optional: Adjust padding as needed */
-                border-bottom: 2px solid #444;
-            }
-            /* Add more CSS rules for other classes as needed */
-        `;
-        form.appendChild(style);
 
         buttonCell.appendChild(search);
         buttonCell.appendChild(reset);
@@ -350,7 +335,7 @@ class ClassHelper extends HTMLElement {
     getPaginationFragment(prevUrl, nextUrl, index, size) {
         const fragment = document.createDocumentFragment();
         const table = document.createElement('table');
-        table.setAttribute("id", "popup-pagination");
+        table.setAttribute("class", "popup-pagination");
         const tr = document.createElement('tr');
         const prev = document.createElement('td');
         if (prevUrl) {
@@ -370,7 +355,7 @@ class ClassHelper extends HTMLElement {
         const next = document.createElement('td');
         if (nextUrl) {
             const a = document.createElement('button');
-            a.setAttribute("id", "button-pagination");
+            a.setAttribute("class", "button-pagination");
             a.addEventListener("click", () => {
                 this.dispatchEvent(new CustomEvent("nextPage", {
                     detail: {
@@ -382,43 +367,8 @@ class ClassHelper extends HTMLElement {
             next.appendChild(a);
         }
 
-        const style = document.createElement("style");
-        style.textContent = `
-        #popup-pagination:hover {
-            background-color: transparent;
-        }      
-        #popup-pagination th {
-                width: 33%;
-                border-style: hidden;
-                text-align: center;
-              }
-              #popup-pagination td {
-                  border: none
-              }
-              #popup-pagination th:first-child {
-                text-align: left;
-              }
-              #popup-pagination th:last-child {
-                text-align: right;
-              }
-
-              /* Anchor tag styles */
-    #popup-pagination button, #popup-pagination a:link {
-        color: blue;
-        text-decoration: none;
-    }
-
-    /* Define anchor tag styles on hover */
-    #popup-pagination button:hover {
-        background-color: transparent;
-        cursor: pointer;
-    }
-        `;
-
-
         tr.append(prev, info, next);
         table.appendChild(tr);
-        table.appendChild(style);   //In a single file(using)
 
         fragment.appendChild(table);
         return fragment;
@@ -427,10 +377,10 @@ class ClassHelper extends HTMLElement {
     getAccumulatorFragment(preSelectedValues) {
         const fragment = document.createDocumentFragment();
         const divacc = document.createElement("div");
-        divacc.setAttribute("id", "popup-control");
+        divacc.setAttribute("class", "popup-control");
 
         const preview = document.createElement("input");
-        preview.setAttribute("id", "popup-preview");
+        divacc.setAttribute("class", "popup-control");
         preview.type = "text";
         preview.name = "preview";
         if (preSelectedValues.length > 0) {
@@ -448,7 +398,7 @@ class ClassHelper extends HTMLElement {
         });
 
         const apply = document.createElement("button");
-        apply.setAttribute("id", "acc-apply");
+        apply.setAttribute("class", "acc-apply");
         apply.textContent = ClassHelper.translations["Apply"];
         apply.addEventListener("click", () => {
             this.dispatchEvent(new CustomEvent("valueSelected", {
@@ -458,38 +408,7 @@ class ClassHelper extends HTMLElement {
             }))
         })
 
-        const style = document.createElement("style");
-
-        style.textContent = `
-        #popup-control {
-            display: block;
-            top: auto;
-            right: 0;
-            bottom: 0;
-            left: 0;
-            padding: .5em;
-            border-top: 2px solid #444;
-            background-color: #eee;
-          }
-          
-          #popup-preview {
-            margin-right: 3em;
-            margin-left: 1em;
-          }
-          
-          #popup-control button {
-            margin-right: 2em;
-            margin-left: 2em;
-            width: 7em;
-          }
-          
-          #acc-apply{
-            font-weight: bold;
-          }`;
-
-        divacc.append(preview, cancel, apply, style);
-
-        //fragment.appendChild(div, style);
+        divacc.append(preview, cancel, apply);
         fragment.appendChild(divacc);
 
         return fragment;
@@ -505,10 +424,10 @@ class ClassHelper extends HTMLElement {
         const fragment = document.createDocumentFragment();
 
         const divtable = document.createElement('div');
-        divtable.setAttribute("id", "popup-divtable");
+        divtable.setAttribute("class", "popup-divtable");
 
         const table = document.createElement('table');
-        table.setAttribute("id", "popup-table");
+        table.setAttribute("class", "popup-table");
         const thead = document.createElement('thead');
         const tbody = document.createElement('tbody');
         const tfoot = document.createElement('tfoot'); // Create table footer
@@ -517,14 +436,14 @@ class ClassHelper extends HTMLElement {
         const headerRow = document.createElement('tr');
         let thx = document.createElement("th");
         thx.textContent = "X";
-        thx.style.width = "15px";
+        thx.setAttribute("class", "tableheader");
         headerRow.appendChild(thx);
 
         headers.forEach(header => {
             const th = document.createElement('th');
             th.textContent = header;
             if (header === "ID") {
-                th.setAttribute("id", "tableid"); // Set width for ID column
+                th.setAttribute("class", "tableid"); // Set width for column
             }
             headerRow.appendChild(th);
         });
@@ -538,7 +457,7 @@ class ClassHelper extends HTMLElement {
             checkbox.setAttribute("type", "checkbox");
 
             row.appendChild(checkbox);
-            row.style.cursor = "pointer";
+            row.setAttribute("class", "rowstyle");
             if (preSelectedValues.includes(entry[headers[0]])) {
                 checkbox.checked = true;
             }
@@ -565,7 +484,7 @@ class ClassHelper extends HTMLElement {
         const footerRow = document.createElement('tr');
         let footThx = document.createElement("th");
         footThx.textContent = "X";
-        footThx.style.paddingLeft = "0.3em";
+        footThx.setAttribute("class", "footerstyle");
         footerRow.appendChild(footThx);
 
         headers.forEach(header => {
@@ -575,60 +494,10 @@ class ClassHelper extends HTMLElement {
         });
         tfoot.appendChild(footerRow);
 
-        const style = document.createElement("style");
-        style.textContent = `
-        #popup-divtable {
-            overflow: auto;
-        }    
-
-        #check, #tableid{
-            width: 10px;
-        }
-
-        #popup-table {
-                table-layout: fixed; /* compromises quality for speed   */
-                max-height: 100px;
-                width: 100%;
-                font-size: .9em;
-                padding-bottom: 3em;
-            }   
-        
-            table th {
-                font-weight: normal;
-                text-align: left;
-                padding-left: .3em;
-                color: #444;
-                background-color: #efefef;
-                border-bottom: 1px solid #afafaf;
-                border-top: 1px solid #afafaf;
-                text-transform: uppercase;
-                vertical-align: middle;
-                line-height:1.5em;
-            }
-        
-            table td {
-                vertical-align: middle;
-                padding-left: .3em;
-                padding-right: .2em;
-                border-bottom: 1px solid #efefef;
-                text-align: left;
-                empty-cells: show;
-                white-space: nowrap;
-                vertical-align: middle;
-            }
-        
-            table tr:hover {
-                background-color: #eee;
-                cursor: pointer;
-            }
-            
-        `;
-
         // Assemble the table
         table.appendChild(thead);
         table.appendChild(tbody);
         table.appendChild(tfoot); // Append the footer
-        table.appendChild(style);
 
         divtable.appendChild(table);
 
@@ -638,7 +507,7 @@ class ClassHelper extends HTMLElement {
     }
 
     /**
-     * 
+     * main method called when classhelper is clicked
      * @param {Object} props 
      * @param {string} props.width
      * @param {string} props.height
@@ -657,6 +526,14 @@ class ClassHelper extends HTMLElement {
         if (input.value) {
             preSelectedValues = input.value.split(',');
         }
+
+        const cssLink = this.popupRef.document.createElement("link");
+        cssLink.rel = "stylesheet";
+        cssLink.type = "text/css";
+
+        let cssHref = props.origin + '/' + props.tracker + '/' + "@@file/classhelper.css";
+        cssLink.href = cssHref;
+        this.popupRef.document.head.appendChild(cssLink);
 
         const json = fetch(apiURL).then(resp => {
             if (!resp.ok) {
@@ -680,39 +557,25 @@ class ClassHelper extends HTMLElement {
             }
 
             const container = document.createElement("div");
-            container.style.display = "flex";
-            container.style.flexDirection = "column";
-            container.style.justifyContent = "space-between";
-            container.style.height = "100%";
+            container.setAttribute("class", "flexcontainer");
 
             const b = this.popupRef.document.body;
             if (this.getAttribute("searchWith")) {
                 container.appendChild(this.getSearchFragment());
-                //b.appendChild(this.getSearchFragment());
             }
             container.appendChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize));
-            //b.appendChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize));
-
-            // Conditionally add table fragment with or without top margin
-            const tableFragment = this.getTableFragment(props.fields, data.collection, preSelectedValues);
-            if (this.getAttribute("searchWith")) {
-                const styledTableFragment = document.createElement("div");
-                styledTableFragment.style.marginTop = "95px";
-                styledTableFragment.appendChild(tableFragment);
-                container.appendChild(styledTableFragment);
-                //b.appendChild(styledTableFragment);
-            } else {
-                container.appendChild(tableFragment);
-            }
+            const popupTable = document.createElement("div");
+            popupTable.setAttribute("class", "popup-table");
+            container.appendChild(popupTable);
+            const separator = document.createElement("div");
+            separator.setAttribute("class", "separator");
+            container.appendChild(separator);
             container.appendChild(this.getAccumulatorFragment(preSelectedValues));
-            // container.style.overflow = "hidden";
-            // container.appendChild(style);
-
-            //b.appendChild(this.getAccumulatorFragment());
             b.appendChild(container);
         })
     }
 
+    /** method when next or previous button is clicked */
     pageChange(apiURL, props) {
         let preSelectedValues = this.popupRef.document.getElementById("popup-preview").value.split(",");
 
@@ -737,12 +600,14 @@ class ClassHelper extends HTMLElement {
         });
     }
 
+    /** method when a value is selected in  */
     valueSelected(props, value) {
         const input = window.document.querySelector(`form[name="${props.formName}"] input[name="${props.formProperty}"]`);
         input.value = value;
         this.popupRef.close();
     }
 
+    /** method when search is performed within classhelper, here we need to update the classhelper table with search results */
     searchEvent(apiURL, props) {
         fetch(apiURL).then(resp => resp.json()).then(({ data }) => {
             const b = this.popupRef.document.body;
@@ -751,6 +616,7 @@ class ClassHelper extends HTMLElement {
         });
     }
 
+    /** method when an entry in classhelper table is selected */
     selectionEvent(value) {
         const preview = this.popupRef.document.getElementById("popup-preview");
         if (preview.value == "" || preview.value == null) {
