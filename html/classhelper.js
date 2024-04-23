@@ -68,7 +68,7 @@ class ClassHelper extends HTMLElement {
         this.addEventListener("click", openPopUpClosure);
 
         const nextPageClosure = (event) => {
-            this.pageChange(properties, properties).catch(error => {
+            this.pageChange(event.detail.value, properties).catch(error => {
                 // Top level error handling for nextPage method.
                 this.removeEventListener("click", nextPageClosure);
             });
@@ -76,7 +76,7 @@ class ClassHelper extends HTMLElement {
         this.addEventListener("nextPage", nextPageClosure);
 
         const prevPageClosure = (event) => {
-            this.pageChange(properties, properties).catch(error => {
+            this.pageChange(event.detail.value, properties).catch(error => {
                 // Top level error handling for prevPage method.
                 this.removeEventListener("click", prevPageClosure);
             });
@@ -556,26 +556,14 @@ class ClassHelper extends HTMLElement {
      */
     async openPopUp(apiURL, props) {
         // Find preselected values
-        const input = document.getElementsByName(props.formProperty)[0];
+        const input = document.getElementsByName(props.formProperty).item(0);
         let preSelectedValues = [];
         if (input.value) {
             preSelectedValues = input.value.split(',');
         }
 
         const popupFeatures = `popup=yes,width=${props.width},height=${props.height}`;
-        const popupWindow = window.open("about:blank", "_blank", popupFeatures);
-        this.popupRef = popupWindow;
-
-        // This does not create a closure as this event is only triggered once.
-        popupWindow.addEventListener("load", (event) => {
-            /** @type {Document} */
-            const doc = event.target;
-            const css = doc.createElement("link");
-            css.rel = "stylesheet";
-            css.type = "text/css";
-            css.href = props.origin + '/' + props.tracker + '/' + "@@file/classhelper.css";
-            doc.head.appendChild(css);
-        });
+        this.popupRef = window.open("about:blank", "_blank", popupFeatures);
 
         let resp;
         try {
@@ -594,40 +582,52 @@ class ClassHelper extends HTMLElement {
         }
 
         const data = json.data;
-        let prevURL = data["@links"].prev;
-        if (prevURL) {
-            prevURL = prevURL[0].uri;
+        const links = json.data["@links"];
+
+        let prevPageURL, nextPageURL;
+
+        if (links.prev && links.prev.length > 0) {
+            prevPageURL = links.prev[0].uri;
+        }
+        if (links.next && links.next.length > 0) {
+            nextPageURL = links.next[0].uri;
         }
 
-        let nextURL = data["@links"].next;
-        if (nextURL) {
-            nextURL = nextURL[0].uri;
-        }
+        const popupDocument = this.popupRef.document;
+        const popupBody = popupDocument.body;
+        const popupHead = popupDocument.head;
 
-        const container = document.createElement("div");
-        container.setAttribute("class", "flexcontainer");
+        // Add external classhelper css to head
+        const css = popupDocument.createElement("link");
+        css.rel = "stylesheet";
+        css.type = "text/css";
+        css.href = props.origin + '/' + props.tracker + '/' + "@@file/classhelper.css";
+        popupHead.appendChild(css);
 
-        const b = this.popupRef.document.body;
+        popupBody.classList.add("flex-container");
+
         if (this.getAttribute("searchWith")) {
-            container.appendChild(this.getSearchFragment());
+            const searchFrag = this.getSearchFragment();
+            popupBody.appendChild(searchFrag);
         }
-        container.appendChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize));
 
-        const tableFragment = this.getTableFragment(props.fields, data.collection, preSelectedValues);
-        const popupTable = document.createElement("div");
-        popupTable.appendChild(tableFragment);
-        popupTable.setAttribute("class", "popup-table");
-        container.appendChild(popupTable);
+        const paginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize);
+        popupBody.appendChild(paginationFrag);
+
+        const tableFrag = this.getTableFragment(props.fields, data.collection, preSelectedValues);
+        popupBody.appendChild(tableFrag);
+    
         const separator = document.createElement("div");
-        separator.setAttribute("class", "separator");
-        container.appendChild(separator);
-        container.appendChild(this.getAccumulatorFragment(preSelectedValues));
-        b.appendChild(container);
+        separator.classList.add("separator");
+        popupBody.appendChild(separator);
+
+        const accumulatorFrag = this.getAccumulatorFragment(preSelectedValues);
+        popupBody.appendChild(accumulatorFrag);
     }
 
     /** method when next or previous button is clicked */
     async pageChange(apiURL, props) {
-        let preSelectedValues = this.popupRef.document.getElementById("popup-preview").value.split(",");
+        let preSelectedValues = this.popupRef.document.getElementsByClassName("popup-preview").item(0).value.split(",");
 
         fetch(apiURL).then(resp => resp.json()).then(({ data }) => {
             const b = this.popupRef.document.body;
@@ -642,9 +642,9 @@ class ClassHelper extends HTMLElement {
             let selfUrl = new URL(data["@links"].self[0].uri);
             props.pageIndex = selfUrl.searchParams.get("@page_index");
 
-            let oldPagination = this.popupRef.document.getElementById("popup-pagination");
+            let oldPagination = this.popupRef.document.getElementsByClassName("popup-pagination").item(0);
             oldPagination.parentElement.replaceChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize), oldPagination);
-            let oldTable = this.popupRef.document.getElementById("popup-table");
+            let oldTable = this.popupRef.document.getElementsByClassName("popup-table").item(0);
             let ancestor = oldTable.parentElement.parentElement;
             ancestor.replaceChild(this.getTableFragment(props.fields, data.collection, preSelectedValues), oldTable.parentElement);
         });
