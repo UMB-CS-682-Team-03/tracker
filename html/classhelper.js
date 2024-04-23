@@ -14,6 +14,9 @@
  * @property {string[]} fields
  */
 
+// Let user customize the css file name
+const CSS_FILE_NAME = "@@file/classhelper.css";
+
 class ClassHelper extends HTMLElement {
     /** @type {Window} */
     popupRef = null;
@@ -84,10 +87,7 @@ class ClassHelper extends HTMLElement {
         this.addEventListener("prevPage", prevPageClosure);
 
         const valueSelectedClosure = (event) => {
-            this.valueSelected(properties, event.detail.value).catch(error => {
-                // Top level error handling for valueSelected method.
-                this.removeEventListener("click", valueSelectedClosure);
-            });
+            this.valueSelected(properties, event.detail.value);
         }
         this.addEventListener("valueSelected", valueSelectedClosure);
 
@@ -132,8 +132,7 @@ class ClassHelper extends HTMLElement {
             "Next": "Next",
             "Prev": "Prev",
             "Search": "Search",
-            "Reset": "Reset",
-            "Out": "Out"
+            "Reset": "Reset"
         };
 
         let tracker = window.location.pathname.split('/')[1];
@@ -141,16 +140,19 @@ class ClassHelper extends HTMLElement {
         url.searchParams.append("@template", "json");
         url.searchParams.append("properties", Object.keys(translations).join(','));
 
-        let resp = await fetch(url);
-        if (!resp.ok) {
+        let resp;
+        try {
+            resp = await fetch(url);
+            if (!resp.ok) throw new Error();
+        } catch (error) {
+            console.error(error);
             throw new Error("error fetching translations from roundup rest api");
-        } else {
-            ClassHelper.translations = translations;
         }
 
         try {
             ClassHelper.translations = await resp.json();
         } catch (error) {
+            // Default to english translations
             ClassHelper.translations = translations;
             throw new Error("error parsing translation json from roundup rest api");
         }
@@ -549,10 +551,9 @@ class ClassHelper extends HTMLElement {
 
     /**
      * main method called when classhelper is clicked
-     * @param {Object} props 
-     * @param {string} props.width
-     * @param {string} props.height
-     * @param {string[]} props.fields
+     * @param {URL | string} apiURL
+     * @param {ClassHelperProps} props 
+     * @throws {Error} when fetching or parsing data from roundup rest api fails
      */
     async openPopUp(apiURL, props) {
         // Find preselected values
@@ -601,7 +602,7 @@ class ClassHelper extends HTMLElement {
         const css = popupDocument.createElement("link");
         css.rel = "stylesheet";
         css.type = "text/css";
-        css.href = props.origin + '/' + props.tracker + '/' + "@@file/classhelper.css";
+        css.href = props.origin + '/' + props.tracker + '/' + CSS_FILE_NAME;
         popupHead.appendChild(css);
 
         popupBody.classList.add("flex-container");
@@ -616,8 +617,8 @@ class ClassHelper extends HTMLElement {
 
         const tableFrag = this.getTableFragment(props.fields, data.collection, preSelectedValues);
         popupBody.appendChild(tableFrag);
-    
-        const separator = document.createElement("div");
+
+        const separator = popupDocument.createElement("div");
         separator.classList.add("separator");
         popupBody.appendChild(separator);
 
@@ -625,50 +626,125 @@ class ClassHelper extends HTMLElement {
         popupBody.appendChild(accumulatorFrag);
     }
 
-    /** method when next or previous button is clicked */
+    /** method when next or previous button is clicked
+     * @param {URL | string} apiURL
+     * @param {ClassHelperProps} props
+     * @throws {Error} when fetching or parsing data from roundup rest api fails
+     */
     async pageChange(apiURL, props) {
-        let preSelectedValues = this.popupRef.document.getElementsByClassName("popup-preview").item(0).value.split(",");
+        let accumulatorValues = this.popupRef.document.getElementsByClassName("popup-preview").item(0).value.split(",");
 
-        fetch(apiURL).then(resp => resp.json()).then(({ data }) => {
-            const b = this.popupRef.document.body;
-            let prevURL = data["@links"].prev ?? null;
-            if (prevURL) {
-                prevURL = prevURL[0].uri;
-            }
-            let nextURL = data["@links"].next ?? null;
-            if (nextURL) {
-                nextURL = nextURL[0].uri;
-            }
-            let selfUrl = new URL(data["@links"].self[0].uri);
-            props.pageIndex = selfUrl.searchParams.get("@page_index");
+        let resp;
+        try {
+            resp = await fetch(apiURL);
+        } catch (error) {
+            // Show message fail to load data
+            throw new Error("error fetching data from roundup rest api");
+        }
 
-            let oldPagination = this.popupRef.document.getElementsByClassName("popup-pagination").item(0);
-            oldPagination.parentElement.replaceChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize), oldPagination);
-            let oldTable = this.popupRef.document.getElementsByClassName("popup-table").item(0);
-            let ancestor = oldTable.parentElement.parentElement;
-            ancestor.replaceChild(this.getTableFragment(props.fields, data.collection, preSelectedValues), oldTable.parentElement);
-        });
+        let json;
+        try {
+            json = await resp.json();
+        } catch (error) {
+            // Show message fail to parse json
+            throw new Error("error parsing json from roundup rest api");
+        }
+
+        const data = json.data;
+        const links = json.data["@links"];
+
+        let prevPageURL, nextPageURL, selfPageURL;
+
+        if (links.prev && links.prev.length > 0) {
+            prevPageURL = links.prev[0].uri;
+        }
+        if (links.next && links.next.length > 0) {
+            nextPageURL = links.next[0].uri;
+        }
+        if (links.self && links.self.length > 0) {
+            selfPageURL = new URL(links.self[0].uri);
+        }
+
+        const popupBody = this.popupRef.document.body;
+        props.pageIndex = selfPageURL.searchParams.get("@page_index");
+
+        const oldPaginationFrag = popupBody.getElementsByClassName("popup-pagination").item(0);
+        const newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize);
+        popupBody.replaceChild(newPaginationFrag, oldPaginationFrag);
+
+        let oldTableFrag = popupBody.getElementsByClassName("popup-divtable").item(0);
+        let newTableFrag = this.getTableFragment(props.fields, data.collection, accumulatorValues);
+        popupBody.replaceChild(newTableFrag, oldTableFrag);
     }
 
-    /** method when a value is selected in  */
-    async valueSelected(props, value) {
-        const input = window.document.querySelector(`form[name="${props.formName}"] input[name="${props.formProperty}"]`);
+    /** method when a value is selected in 
+     * @param {ClassHelperProps} props
+     * @param {string} value
+     */
+    valueSelected(props, value) {
+        const input = document.getElementsByName(props.formProperty).item(0);
         input.value = value;
         this.popupRef.close();
     }
 
-    /** method when search is performed within classhelper, here we need to update the classhelper table with search results */
+    /** method when search is performed within classhelper, here we need to update the classhelper table with search results
+     * @param {URL | string} apiURL
+     * @param {ClassHelperProps} props
+     * @throws {Error} when fetching or parsing data from roundup rest api fails
+     */
     async searchEvent(apiURL, props) {
-        fetch(apiURL).then(resp => resp.json()).then(({ data }) => {
-            const b = this.popupRef.document.body;
-            let oldTable = this.popupRef.document.getElementById("popup-table");
-            b.replaceChild(this.getTableFragment(props.fields, data.collection), oldTable);
-        });
+        let accumulatorValues = this.popupRef.document.getElementsByClassName("popup-preview").item(0).value.split(",");
+
+        let resp;
+        try {
+            resp = await fetch(apiURL);
+        } catch (error) {
+            // Show message fail to load data
+            throw new Error("error fetching data from roundup rest api");
+        }
+
+        let json;
+        try {
+            json = await resp.json();
+        } catch (error) {
+            // Show message fail to parse json
+            throw new Error("error parsing json from roundup rest api");
+        }
+
+        const data = json.data;
+        const links = json.data["@links"];
+
+        let prevPageURL, nextPageURL, selfPageURL;
+
+        if (links.prev && links.prev.length > 0) {
+            prevPageURL = links.prev[0].uri;
+        }
+        if (links.next && links.next.length > 0) {
+            nextPageURL = links.next[0].uri;
+        }
+        if (links.self && links.self.length > 0) {
+            selfPageURL = new URL(links.self[0].uri);
+        }
+
+        const popupBody = this.popupRef.document.body;
+        props.pageIndex = selfPageURL.searchParams.get("@page_index");
+
+        if (prevPageURL || nextPageURL) {
+            const oldPaginationFrag = popupBody.getElementsByClassName("popup-pagination").item(0);
+            const newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize);
+            popupBody.replaceChild(newPaginationFrag, oldPaginationFrag);
+        }
+
+        let oldTableFrag = popupBody.getElementsByClassName("popup-divtable").item(0);
+        let newTableFrag = this.getTableFragment(props.fields, data.collection, accumulatorValues);
+        popupBody.replaceChild(newTableFrag, oldTableFrag);
     }
 
-    /** method when an entry in classhelper table is selected */
-    async selectionEvent(value) {
-        const preview = this.popupRef.document.getElementById("popup-preview");
+    /** method when an entry in classhelper table is selected
+     * @param {string} value
+     */
+    selectionEvent(value) {
+        const preview = this.popupRef.document.getElementsByClassName("popup-preview").item(0);
         if (preview.value == "" || preview.value == null) {
             preview.value = value
         } else {
