@@ -26,6 +26,9 @@ class ClassHelper extends HTMLElement {
         /** @type {ClassHelperProps} */
         let properties;
 
+        /** @type {URL} */
+        let apiURL;
+
         try {
             link = this.findClassHelpLink();
         } catch (e) {
@@ -40,6 +43,7 @@ class ClassHelper extends HTMLElement {
 
         try {
             properties = ClassHelper.parseHelpUrlData(link);
+            apiURL = ClassHelper.getRestURL(properties);
         } catch (e) {
             // Failed parsing props -> reset, log and return.
             link.removeEventListener("click", preventDefault);
@@ -48,30 +52,61 @@ class ClassHelper extends HTMLElement {
             return;
         }
 
-        const apiURL = ClassHelper.getRestURL(properties);
+        ClassHelper.fetchTranslations().catch(error => {
+            // Top level handling for translation errors.
+            // Fallbacks to use english keywords.
+            /** @todo think about the showing it to user */
+            console.error(error.message);
+        });
 
-        ClassHelper.fetchTranslations();
+        const openPopUpClosure = (event) => {
+            this.openPopUp(apiURL, properties).catch(error => {
+                // Top level error handling for openPopUp method.
+                this.removeEventListener("click", openPopUpClosure);
+            });
+        };
+        this.addEventListener("click", openPopUpClosure);
 
-        // Listeners
-        link.addEventListener("click", (event) => {
-            this.openPopUp(apiURL, properties);
-        });
-        this.addEventListener("nextPage", (event) => {
-            this.pageChange(event.detail.value, properties);
-        });
-        this.addEventListener("prevPage", (event) => {
-            this.pageChange(event.detail.value, properties);
-        });
-        this.addEventListener("valueSelected", (event) => {
-            this.valueSelected(properties, event.detail.value);
-        });
-        this.addEventListener("search", (event) => {
+        const nextPageClosure = (event) => {
+            this.pageChange(properties, properties).catch(error => {
+                // Top level error handling for nextPage method.
+                this.removeEventListener("click", nextPageClosure);
+            });
+        }
+        this.addEventListener("nextPage", nextPageClosure);
+
+        const prevPageClosure = (event) => {
+            this.pageChange(properties, properties).catch(error => {
+                // Top level error handling for prevPage method.
+                this.removeEventListener("click", prevPageClosure);
+            });
+        }
+        this.addEventListener("prevPage", prevPageClosure);
+
+        const valueSelectedClosure = (event) => {
+            this.valueSelected(properties, event.detail.value).catch(error => {
+                // Top level error handling for valueSelected method.
+                this.removeEventListener("click", valueSelectedClosure);
+            });
+        }
+        this.addEventListener("valueSelected", valueSelectedClosure);
+
+        const searchClosure = (event) => {
             const searchURL = ClassHelper.getSearchURL(properties, event.detail.value);
-            this.searchEvent(searchURL, properties);
-        });
-        this.addEventListener("selection", (event) => {
-            this.selectionEvent(event.detail.value);
-        });
+            this.searchEvent(searchURL, properties).catch(error => {
+                // Top level error handling for searchEvent method.
+                this.removeEventListener("click", searchClosure);
+            });
+        }
+        this.addEventListener("search", searchClosure);
+
+        const selectionClosure = (event) => {
+            this.selectionEvent(event.detail.value).catch(error => {
+                // Top level error handling for selectionEvent method.
+                this.removeEventListener("click", selectionClosure);
+            });
+        }
+        this.addEventListener("selection", selectionClosure);
     }
 
     attributeChangedCallback(name, oldValue, _newValue) {
@@ -85,20 +120,20 @@ class ClassHelper extends HTMLElement {
         }
     }
 
-    /** @todo error handling */
     static async fetchTranslations() {
+        // Singleton implementation
         if (ClassHelper.translations != null) {
             return;
         }
 
         let translations = {
-            "Apply": "",
-            "Cancel": "",
-            "Next": "",
-            "Prev": "",
-            "Search": "",
-            "Reset": "",
-            "Out": ""
+            "Apply": "Apply",
+            "Cancel": "Cancel",
+            "Next": "Next",
+            "Prev": "Prev",
+            "Search": "Search",
+            "Reset": "Reset",
+            "Out": "Out"
         };
 
         let tracker = window.location.pathname.split('/')[1];
@@ -109,8 +144,16 @@ class ClassHelper extends HTMLElement {
         let resp = await fetch(url);
         if (!resp.ok) {
             throw new Error("error fetching translations from roundup rest api");
+        } else {
+            ClassHelper.translations = translations;
         }
-        ClassHelper.translations = await resp.json();
+
+        try {
+            ClassHelper.translations = await resp.json();
+        } catch (error) {
+            ClassHelper.translations = translations;
+            throw new Error("error parsing translation json from roundup rest api");
+        }
     }
 
     /**
@@ -206,13 +249,10 @@ class ClassHelper extends HTMLElement {
     /** 
      * from roundup docs rest api url - "{host}/{tracker}
      * we pass helpurl which is parsed from anchor tag and return a URL.
-     * @param {Object} props
-     * @param {string} props.apiClassName
-     * @param {number} props.pageIndex
-     * @param {number} props.pageSize
-     * @param {string[]} props.fields
-     * @param {string} [props.sort]
-     * @returns {URL} */
+     * @param {ClassHelperProps} props
+     * @returns {URL}
+     * @throws {Error}
+     */
     static getRestURL(props) {
         const restDataPath = "rest/data";
         const origin = window.location.origin;
@@ -380,7 +420,7 @@ class ClassHelper extends HTMLElement {
         divacc.setAttribute("class", "popup-control");
 
         const preview = document.createElement("input");
-        divacc.setAttribute("class", "popup-control");
+        preview.setAttribute("class", "popup-preview");
         preview.type = "text";
         preview.name = "preview";
         if (preSelectedValues.length > 0) {
@@ -468,7 +508,8 @@ class ClassHelper extends HTMLElement {
                 row.appendChild(td);
             });
 
-            row.addEventListener("click", () => {
+            row.addEventListener("click", (e) => {
+                console.log(e.target);
                 checkbox.checked = !checkbox.checked;
                 this.dispatchEvent(new CustomEvent("selection", {
                     detail: {
@@ -512,74 +553,80 @@ class ClassHelper extends HTMLElement {
      * @param {string} props.width
      * @param {string} props.height
      * @param {string[]} props.fields
-     * @returns {Window}
      */
-    openPopUp(apiURL, props) {
-        let popupFeatures = "popup=yes";
-        popupFeatures += ",width=" + props.width;
-        popupFeatures += ",height=" + props.height;
-
-        this.popupRef = window.open("about:blank", "_blank", popupFeatures);
-
+    async openPopUp(apiURL, props) {
+        // Find preselected values
         const input = document.getElementsByName(props.formProperty)[0];
         let preSelectedValues = [];
         if (input.value) {
             preSelectedValues = input.value.split(',');
         }
 
-        const cssLink = this.popupRef.document.createElement("link");
-        cssLink.rel = "stylesheet";
-        cssLink.type = "text/css";
+        const popupFeatures = `popup=yes,width=${props.width},height=${props.height}`;
+        const popupWindow = window.open("about:blank", "_blank", popupFeatures);
+        this.popupRef = popupWindow;
 
-        let cssHref = props.origin + '/' + props.tracker + '/' + "@@file/classhelper.css";
-        cssLink.href = cssHref;
-        this.popupRef.document.head.appendChild(cssLink);
-
-        const json = fetch(apiURL).then(resp => {
-            if (!resp.ok) {
-                throw new Error("error fetching data from roundup rest api");
-            }
-            return resp.json();
-        }).catch(error => {
-            throw new Error("error parsing json from roundup rest api");
+        // This does not create a closure as this event is only triggered once.
+        popupWindow.addEventListener("load", (event) => {
+            /** @type {Document} */
+            const doc = event.target;
+            const css = doc.createElement("link");
+            css.rel = "stylesheet";
+            css.type = "text/css";
+            css.href = props.origin + '/' + props.tracker + '/' + "@@file/classhelper.css";
+            doc.head.appendChild(css);
         });
 
-        json.then(result => {
-            const data = result.data;
-            let prevURL = data["@links"].prev;
-            if (prevURL) {
-                prevURL = prevURL[0].uri;
-            }
+        let resp;
+        try {
+            resp = await fetch(apiURL);
+        } catch (error) {
+            // Show message fail to load data
+            throw new Error("error fetching data from roundup rest api");
+        }
 
-            let nextURL = data["@links"].next;
-            if (nextURL) {
-                nextURL = nextURL[0].uri;
-            }
+        let json;
+        try {
+            json = await resp.json();
+        } catch (error) {
+            // Show message fail to parse json
+            throw new Error("error parsing json from roundup rest api");
+        }
 
-            const container = document.createElement("div");
-            container.setAttribute("class", "flexcontainer");
+        const data = json.data;
+        let prevURL = data["@links"].prev;
+        if (prevURL) {
+            prevURL = prevURL[0].uri;
+        }
 
-            const b = this.popupRef.document.body;
-            if (this.getAttribute("searchWith")) {
-                container.appendChild(this.getSearchFragment());
-            }
-            container.appendChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize));
+        let nextURL = data["@links"].next;
+        if (nextURL) {
+            nextURL = nextURL[0].uri;
+        }
 
-            const tableFragment = this.getTableFragment(props.fields, data.collection, preSelectedValues);
-            const popupTable = document.createElement("div");
-            popupTable.appendChild(tableFragment);
-            popupTable.setAttribute("class", "popup-table");
-            container.appendChild(popupTable);
-            const separator = document.createElement("div");
-            separator.setAttribute("class", "separator");
-            container.appendChild(separator);
-            container.appendChild(this.getAccumulatorFragment(preSelectedValues));
-            b.appendChild(container);
-        })
+        const container = document.createElement("div");
+        container.setAttribute("class", "flexcontainer");
+
+        const b = this.popupRef.document.body;
+        if (this.getAttribute("searchWith")) {
+            container.appendChild(this.getSearchFragment());
+        }
+        container.appendChild(this.getPaginationFragment(prevURL, nextURL, props.pageIndex, props.pageSize));
+
+        const tableFragment = this.getTableFragment(props.fields, data.collection, preSelectedValues);
+        const popupTable = document.createElement("div");
+        popupTable.appendChild(tableFragment);
+        popupTable.setAttribute("class", "popup-table");
+        container.appendChild(popupTable);
+        const separator = document.createElement("div");
+        separator.setAttribute("class", "separator");
+        container.appendChild(separator);
+        container.appendChild(this.getAccumulatorFragment(preSelectedValues));
+        b.appendChild(container);
     }
 
     /** method when next or previous button is clicked */
-    pageChange(apiURL, props) {
+    async pageChange(apiURL, props) {
         let preSelectedValues = this.popupRef.document.getElementById("popup-preview").value.split(",");
 
         fetch(apiURL).then(resp => resp.json()).then(({ data }) => {
@@ -604,14 +651,14 @@ class ClassHelper extends HTMLElement {
     }
 
     /** method when a value is selected in  */
-    valueSelected(props, value) {
+    async valueSelected(props, value) {
         const input = window.document.querySelector(`form[name="${props.formName}"] input[name="${props.formProperty}"]`);
         input.value = value;
         this.popupRef.close();
     }
 
     /** method when search is performed within classhelper, here we need to update the classhelper table with search results */
-    searchEvent(apiURL, props) {
+    async searchEvent(apiURL, props) {
         fetch(apiURL).then(resp => resp.json()).then(({ data }) => {
             const b = this.popupRef.document.body;
             let oldTable = this.popupRef.document.getElementById("popup-table");
@@ -620,7 +667,7 @@ class ClassHelper extends HTMLElement {
     }
 
     /** method when an entry in classhelper table is selected */
-    selectionEvent(value) {
+    async selectionEvent(value) {
         const preview = this.popupRef.document.getElementById("popup-preview");
         if (preview.value == "" || preview.value == null) {
             preview.value = value
