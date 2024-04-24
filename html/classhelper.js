@@ -109,6 +109,7 @@ class ClassHelper extends HTMLElement {
         }
 
         const handleSearchEvent = (event) => {
+            properties.pageIndex = 1;
             const searchURL = ClassHelper.getSearchURL(properties, event.detail.value);
             this.searchEvent(searchURL, properties).catch(error => {
                 // Top level error handling for searchEvent method.
@@ -863,11 +864,17 @@ class ClassHelper extends HTMLElement {
         const popupBody = this.popupRef.document.body;
         props.pageIndex = selfPageURL.searchParams.get("@page_index");
 
+        const oldPaginationFrag = popupDocument.getElementById("popup-pagination");
+        let newPaginationFrag;
         if (prevPageURL || nextPageURL) {
-            const oldPaginationFrag = popupDocument.getElementById("popup-pagination");
-            const newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize);
-            popupBody.replaceChild(newPaginationFrag, oldPaginationFrag);
+            newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize);
+        } else {
+            newPaginationFrag = popupDocument.createElement("div");
+            newPaginationFrag.id = "popup-pagination";
+            newPaginationFrag.classList.add("popup-pagination");
         }
+        popupBody.replaceChild(newPaginationFrag, oldPaginationFrag);
+
 
         let oldTableFrag = popupDocument.getElementById("popup-tablediv");
         let newTableFrag = this.getTableFragment(props.fields, data.collection, accumulatorValues);
