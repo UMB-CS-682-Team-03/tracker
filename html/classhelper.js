@@ -72,20 +72,18 @@ class ClassHelper extends HTMLElement {
             console.error(error.message);
         });
 
-        const handleClickEvent = (event) => {
-            this.openPopUp(apiURL, properties).catch(error => {
-                // Top level error handling for openPopUp method.
-                this.removeEventListener("click", handleClickEvent);
-                cleanUpClosure();
-            });
-        };
-
         const cleanUpClosure = () => {
             this.removeEventListener("click", handleClickEvent);
             link.removeEventListener("click", preventDefault);
             link.setAttribute("onclick", script);
         }
 
+        const handleClickEvent = (event) => {
+            this.openPopUp(apiURL, properties).catch(error => {
+                // Top level error handling for openPopUp method.
+                cleanUpClosure();
+            });
+        };
 
         const handleNextPageEvent = (event) => {
             this.pageChange(event.detail.value, properties).catch(error => {
@@ -203,7 +201,6 @@ class ClassHelper extends HTMLElement {
                 const splitResult = param.split("[]");
                 param = splitResult[0];
                 const sortOrder = splitResult[1];
-
                 let url = `${props.origin}/${props.tracker}/rest/data/${param}?@fields=id,name`;
                 if (sortOrder) {
                     url += `&@sort=${sortOrder}`;
