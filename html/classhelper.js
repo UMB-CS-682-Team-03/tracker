@@ -548,14 +548,14 @@ class ClassHelper extends HTMLElement {
     getTableFragment(headers, data, preSelectedValues) {
         const fragment = document.createDocumentFragment();
 
-        const divtable = document.createElement('div');
-        divtable.setAttribute("class", "popup-divtable");
+        const container = document.createElement('div');
+        container.classList.add("popup-tablediv");
 
         const table = document.createElement('table');
-        table.setAttribute("class", "popup-table");
+        table.classList.add("popup-table");
         const thead = document.createElement('thead');
         const tbody = document.createElement('tbody');
-        const tfoot = document.createElement('tfoot'); // Create table footer
+        const tfoot = document.createElement('tfoot');
 
         // Create table headers
         const headerRow = document.createElement('tr');
@@ -567,19 +567,20 @@ class ClassHelper extends HTMLElement {
         headers.forEach(header => {
             const th = document.createElement('th');
             th.textContent = header;
-            if (header === "ID") {
-                th.setAttribute("class", "tableid"); // Set width for column
-            }
             headerRow.appendChild(th);
         });
         thead.appendChild(headerRow);
 
         // Create table body with data
-        data.forEach(entry => {
+        data.forEach((entry) => {
             const row = document.createElement('tr');
+            row.dataset.id = entry[headers[0]];
+            row.setAttribute("tabindex", 1);
 
             const checkbox = document.createElement("input");
             checkbox.setAttribute("type", "checkbox");
+            checkbox.checked = false;
+            checkbox.setAttribute("tabindex", -1);
 
             row.appendChild(checkbox);
             row.setAttribute("class", "rowstyle");
@@ -592,25 +593,62 @@ class ClassHelper extends HTMLElement {
                 td.textContent = entry[header];
                 row.appendChild(td);
             });
-
-            row.addEventListener("click", (e) => {
-                console.log(e.target);
-                checkbox.checked = !checkbox.checked;
-                this.dispatchEvent(new CustomEvent("selection", {
-                    detail: {
-                        value: entry[headers[0]]
-                    }
-                }))
-            });
-
             tbody.appendChild(row);
+        });
+
+        tbody.addEventListener("click", (e) => {
+            let id, tr;
+            if (e.target.tagName === "INPUT" || e.target.tagName === "TD") {
+                id = e.target.parentElement.dataset.id;
+                tr = e.target.parentElement;
+            } else if (e.target.tagName === "TR") {
+                id = e.target.dataset.id;
+                tr = e.target;
+            }
+
+            if (e.target.tagName !== "INPUT") {
+                tr.children.item(0).checked = !tr.children.item(0).checked;
+            }
+
+            this.dispatchEvent(new CustomEvent("selection", {
+                detail: {
+                    value: id
+                }
+            }));
+        });
+
+        this.popupRef.document.addEventListener("keydown", (e) => {
+            if (e.target.tagName == "TR") {
+                if (e.key === "ArrowDown") {
+                    if (e.target.nextElementSibling != null) {
+                        e.target.nextElementSibling.focus();
+                    } else {
+                        e.target.parentElement.firstChild.focus();
+                    }
+                }
+                if (e.key === "ArrowUp") {
+                    if (e.target.previousElementSibling != null) {
+                        e.target.previousElementSibling.focus();
+                    } else {
+                        e.target.parentElement.lastChild.focus();
+                    }
+                }
+                if (e.key === "Enter" || e.key === " ") {
+                    let tr = e.target;
+                    tr.children.item(0).checked = !tr.children.item(0).checked;
+                    this.dispatchEvent(new CustomEvent("selection", {
+                        detail: {
+                            value: tr.dataset.id
+                        }
+                    }));
+                }
+            }
         });
 
         // Create table footer with the same column values as headers
         const footerRow = document.createElement('tr');
         let footThx = document.createElement("th");
         footThx.textContent = "X";
-        footThx.setAttribute("class", "footerstyle");
         footerRow.appendChild(footThx);
 
         headers.forEach(header => {
@@ -625,9 +663,9 @@ class ClassHelper extends HTMLElement {
         table.appendChild(tbody);
         table.appendChild(tfoot); // Append the footer
 
-        divtable.appendChild(table);
+        container.appendChild(table);
 
-        fragment.appendChild(divtable);
+        fragment.appendChild(container);
 
         return fragment;
     }

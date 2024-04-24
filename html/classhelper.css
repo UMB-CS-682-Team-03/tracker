@@ -1,4 +1,4 @@
-.popup-divtable {
+.popup-tablediv {
     overflow: auto;
 }    
 
@@ -48,10 +48,6 @@ table tr:hover {
 
 .tableheader{
     width: 15px;
-}
-
-.footerstyle{
-    padding-left: 0.3em;
 }
 
 /* Accumulator */
