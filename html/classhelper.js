@@ -140,7 +140,7 @@ class ClassHelper extends HTMLElement {
                 console.error(error.message);
             });
 
-            let oldForm = this.popupRef.document.getElementsByClassName("popup-search").item(0);
+            let oldForm = this.popupRef.document.getElementById("popup-search");
             let newForm = this.getSearchFragment();
             this.popupRef.document.body.replaceChild(newForm, oldForm);
         }
@@ -362,6 +362,7 @@ class ClassHelper extends HTMLElement {
     getSearchFragment() {
         const fragment = document.createDocumentFragment();
         const form = document.createElement("form");
+        form.setAttribute("id", "popup-search");
         form.classList.add("popup-search"); // Add class for styling
 
         const params = this.getAttribute("searchWith").split(',');
@@ -386,6 +387,12 @@ class ClassHelper extends HTMLElement {
             let input;
             if (this.dropdowns[param]) {
                 input = document.createElement("select");
+
+                let nullOption = document.createElement("option");
+                nullOption.value = "";
+                nullOption.textContent = "---";
+                input.appendChild(nullOption);
+
                 for (let key of this.dropdowns[param].keys()) {
                     let option = document.createElement("option");
                     option.value = key;
@@ -459,52 +466,55 @@ class ClassHelper extends HTMLElement {
 
     getPaginationFragment(prevUrl, nextUrl, index, size) {
         const fragment = document.createDocumentFragment();
-        const table = document.createElement('table');
-        table.setAttribute("class", "popup-pagination");
-        const tr = document.createElement('tr');
-        const prev = document.createElement('td');
+
+        const container = document.createElement("div");
+        container.id = "popup-pagination";
+        container.classList.add("popup-pagination");
+
+        const info = document.createElement('span');
+        info.textContent = `${1 + (parseInt(index) - 1) * parseInt(size)}..${parseInt(index) * parseInt(size)}`;
+
+        const prev = document.createElement("button");
+        prev.innerHTML = ClassHelper.translations["Prev"];
+        prev.setAttribute("disabled", "disabled");
         if (prevUrl) {
-            const a = document.createElement('button');
-            a.addEventListener("click", () => {
+            prev.removeAttribute("disabled");
+            prev.addEventListener("click", () => {
                 this.dispatchEvent(new CustomEvent("prevPage", {
                     detail: {
                         value: prevUrl
                     }
                 }));
             });
-            a.textContent = ClassHelper.translations["Prev"];
-            prev.appendChild(a);
         }
-        const info = document.createElement('td');
-        info.textContent = `${1 + (parseInt(index) - 1) * parseInt(size)}..${parseInt(index) * parseInt(size)}`;
-        const next = document.createElement('td');
+
+        const next = document.createElement("button");
+        next.innerHTML = ClassHelper.translations["Next"];
+        next.setAttribute("disabled", "disabled");
         if (nextUrl) {
-            const a = document.createElement('button');
-            a.setAttribute("class", "button-pagination");
-            a.addEventListener("click", () => {
+            next.removeAttribute("disabled");
+            next.addEventListener("click", () => {
                 this.dispatchEvent(new CustomEvent("nextPage", {
                     detail: {
                         value: nextUrl
                     }
                 }));
             });
-            a.textContent = ClassHelper.translations["Next"];
-            next.appendChild(a);
         }
 
-        tr.append(prev, info, next);
-        table.appendChild(tr);
-
-        fragment.appendChild(table);
+        container.append(prev, info, next);
+        fragment.appendChild(container);
         return fragment;
     }
 
     getAccumulatorFragment(preSelectedValues) {
         const fragment = document.createDocumentFragment();
         const container = document.createElement("div");
+        container.id = "popup-control";
         container.setAttribute("class", "popup-control");
 
         const preview = document.createElement("input");
+        preview.id = "popup-preview";
         preview.setAttribute("class", "popup-preview");
         preview.type = "text";
         preview.name = "preview";
@@ -549,6 +559,7 @@ class ClassHelper extends HTMLElement {
         const fragment = document.createDocumentFragment();
 
         const container = document.createElement('div');
+        container.id = "popup-tablediv";
         container.classList.add("popup-tablediv");
 
         const table = document.createElement('table');
@@ -753,7 +764,7 @@ class ClassHelper extends HTMLElement {
      * @throws {Error} when fetching or parsing data from roundup rest api fails
      */
     async pageChange(apiURL, props) {
-        let accumulatorValues = this.popupRef.document.getElementsByClassName("popup-preview").item(0).value.split(",");
+        let accumulatorValues = this.popupRef.document.getElementById("popup-preview").value.split(",");
 
         let resp;
         try {
@@ -786,14 +797,15 @@ class ClassHelper extends HTMLElement {
             selfPageURL = new URL(links.self[0].uri);
         }
 
+        const popupDocument = this.popupRef.document;
         const popupBody = this.popupRef.document.body;
         props.pageIndex = selfPageURL.searchParams.get("@page_index");
 
-        const oldPaginationFrag = popupBody.getElementsByClassName("popup-pagination").item(0);
+        const oldPaginationFrag = popupDocument.getElementById("popup-pagination");
         const newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize);
         popupBody.replaceChild(newPaginationFrag, oldPaginationFrag);
 
-        let oldTableFrag = popupBody.getElementsByClassName("popup-divtable").item(0);
+        let oldTableFrag = popupDocument.getElementById("popup-tablediv");
         let newTableFrag = this.getTableFragment(props.fields, data.collection, accumulatorValues);
         popupBody.replaceChild(newTableFrag, oldTableFrag);
     }
@@ -814,7 +826,7 @@ class ClassHelper extends HTMLElement {
      * @throws {Error} when fetching or parsing data from roundup rest api fails
      */
     async searchEvent(apiURL, props) {
-        let accumulatorValues = this.popupRef.document.getElementsByClassName("popup-preview").item(0).value.split(",");
+        let accumulatorValues = this.popupRef.document.getElementById("popup-preview").value.split(",");
 
         let resp;
         try {
@@ -847,16 +859,17 @@ class ClassHelper extends HTMLElement {
             selfPageURL = new URL(links.self[0].uri);
         }
 
+        const popupDocument = this.popupRef.document;
         const popupBody = this.popupRef.document.body;
         props.pageIndex = selfPageURL.searchParams.get("@page_index");
 
         if (prevPageURL || nextPageURL) {
-            const oldPaginationFrag = popupBody.getElementsByClassName("popup-pagination").item(0);
+            const oldPaginationFrag = popupDocument.getElementById("popup-pagination");
             const newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize);
             popupBody.replaceChild(newPaginationFrag, oldPaginationFrag);
         }
 
-        let oldTableFrag = popupBody.getElementsByClassName("popup-divtable").item(0);
+        let oldTableFrag = popupDocument.getElementById("popup-tablediv");
         let newTableFrag = this.getTableFragment(props.fields, data.collection, accumulatorValues);
         popupBody.replaceChild(newTableFrag, oldTableFrag);
     }
@@ -865,7 +878,7 @@ class ClassHelper extends HTMLElement {
      * @param {string} value
      */
     selectionEvent(value) {
-        const preview = this.popupRef.document.getElementsByClassName("popup-preview").item(0);
+        const preview = this.popupRef.document.getElementById("popup-preview");
         if (preview.value == "" || preview.value == null) {
             preview.value = value
         } else {

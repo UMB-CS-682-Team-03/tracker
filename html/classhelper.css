@@ -1,17 +1,19 @@
 .popup-tablediv {
     overflow: auto;
-}    
+}
 
-#check, .tableid{
+#check,
+.tableid {
     width: 10px;
 }
 
 
 .popup-table {
-    table-layout: fixed; /* compromises quality for speed   */
+    table-layout: fixed;
+    /* compromises quality for speed   */
     width: 100%;
     font-size: .9em;
-}   
+}
 
 table th {
     font-weight: normal;
@@ -23,7 +25,7 @@ table th {
     border-top: 1px solid #afafaf;
     text-transform: uppercase;
     vertical-align: middle;
-    line-height:1.5em;
+    line-height: 1.5em;
 }
 
 table td {
@@ -42,11 +44,11 @@ table tr:hover {
     cursor: pointer;
 }
 
-.rowstyle{
+.rowstyle {
     cursor: pointer;
 }
 
-.tableheader{
+.tableheader {
     width: 15px;
 }
 
@@ -61,49 +63,28 @@ table tr:hover {
     border-top: 2px solid #444;
     background-color: #eee;
 }
-    
+
 .popup-control button {
     width: 7em;
 }
-    
-.acc-apply{
+
+.acc-apply {
     font-weight: bold;
 }
 
 /* Pagination */
 
-.popup-pagination:hover {
-    background-color: transparent;
-}      
-
-.popup-pagination th {
-    width: 33%;
-    border-style: hidden;
-    text-align: center;
+.popup-pagination {
+    display: flex;
+    justify-content: space-evenly;
+    padding: 8px;
 }
 
-.popup-pagination td {
-    border: none
-}
-
-.popup-pagination th:first-child {
-    text-align: left;
-}
-
-.popup-pagination th:last-child {
-    text-align: right;
-}
-
-/* Anchor tag styles */
-.popup-pagination button, #popup-pagination a:link {
-    color: blue;
-    text-decoration: none;
-}
-
-/* Define anchor tag styles on hover */
-.popup-pagination button:hover {
-    background-color: transparent;
+.popup-pagination button {
+    min-width: 40px;
+    width: 30%;
     cursor: pointer;
+    color: blue;
 }
 
 /* Search */
@@ -116,17 +97,17 @@ table tr:hover {
 }
 
 
-.resetmargin{
+.resetmargin {
     margin-left: 60px;
 }
 
-.flex-container{
+.flex-container {
     margin: 0;
     display: flex;
     flex-direction: column;
     height: 100%;
 }
 
-.separator{
+.separator {
     flex-grow: 1;
 }
