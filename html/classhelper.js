@@ -20,7 +20,12 @@ const CSS_FILE_NAME = "@@file/classhelper.css";
 class ClassHelper extends HTMLElement {
     /** @type {Window} */
     popupRef = null;
+
+    /** @type {Object.<string, string>} Translation */
     static translations = null;
+
+    /** @type {Object.<string, Object.<string, string>>} */
+    dropdowns = null;
 
     connectedCallback() {
         /** @type {HTMLAnchorElement} */
@@ -62,59 +67,80 @@ class ClassHelper extends HTMLElement {
             console.error(error.message);
         });
 
-        const openPopUpClosure = (event) => {
+        this.fetchDropdowns(properties).catch(error => {
+            // Top level handling for dropdowns errors.
+            console.error(error.message);
+        });
+
+        const handleClickEvent = (event) => {
             this.openPopUp(apiURL, properties).catch(error => {
                 // Top level error handling for openPopUp method.
-                this.removeEventListener("click", openPopUpClosure);
+                this.removeEventListener("click", handleClickEvent);
+                cleanUpClosure();
             });
         };
-        this.addEventListener("click", openPopUpClosure);
 
-        const nextPageClosure = (event) => {
+        const cleanUpClosure = () => {
+            this.removeEventListener("click", handleClickEvent);
+            link.removeEventListener("click", preventDefault);
+            link.setAttribute("onclick", script);
+        }
+
+
+        const handleNextPageEvent = (event) => {
             this.pageChange(event.detail.value, properties).catch(error => {
                 // Top level error handling for nextPage method.
-                this.removeEventListener("click", nextPageClosure);
+                this.removeEventListener("nextPage", handleNextPageEvent);
+                cleanUpClosure();
             });
         }
-        this.addEventListener("nextPage", nextPageClosure);
 
-        const prevPageClosure = (event) => {
+        const handlePrevPageEvent = (event) => {
             this.pageChange(event.detail.value, properties).catch(error => {
                 // Top level error handling for prevPage method.
-                this.removeEventListener("click", prevPageClosure);
+                this.removeEventListener("prevPage", handlePrevPageEvent);
+                cleanUpClosure();
             });
         }
-        this.addEventListener("prevPage", prevPageClosure);
 
-        const valueSelectedClosure = (event) => {
+        const handleValueSelectedEvent = (event) => {
+            // does not throw error
             this.valueSelected(properties, event.detail.value);
         }
-        this.addEventListener("valueSelected", valueSelectedClosure);
 
-        const searchClosure = (event) => {
+        const handleSearchEvent = (event) => {
             const searchURL = ClassHelper.getSearchURL(properties, event.detail.value);
             this.searchEvent(searchURL, properties).catch(error => {
                 // Top level error handling for searchEvent method.
-                this.removeEventListener("click", searchClosure);
+                this.removeEventListener("search", handleSearchEvent);
+                cleanUpClosure();
             });
         }
-        this.addEventListener("search", searchClosure);
 
-        const selectionClosure = (event) => {
-            this.selectionEvent(event.detail.value).catch(error => {
-                // Top level error handling for selectionEvent method.
-                this.removeEventListener("click", selectionClosure);
-            });
+        const handleSelectionEvent = (event) => {
+            // does not throw error
+            this.selectionEvent(event.detail.value);
         }
-        this.addEventListener("selection", selectionClosure);
+
+        this.addEventListener("click", handleClickEvent);
+        this.addEventListener("prevPage", handlePrevPageEvent);
+        this.addEventListener("nextPage", handleNextPageEvent);
+        this.addEventListener("valueSelected", handleValueSelectedEvent);
+        this.addEventListener("search", handleSearchEvent);
+        this.addEventListener("selection", handleSelectionEvent);
     }
 
     attributeChangedCallback(name, oldValue, _newValue) {
         if (name === "searchWith") {
-            if (oldValue === null) {
+            if (!oldValue || oldValue === _newValue) {
                 return;
             }
-            let oldForm = this.popupRef.document.getElementById("popup-search");
+            this.fetchDropdowns().catch(error => {
+                // Top level handling for dropdowns errors.
+                console.error(error.message);
+            });
+
+            let oldForm = this.popupRef.document.getElementsByClassName("popup-search").item(0);
             let newForm = this.getSearchFragment();
             this.popupRef.document.body.replaceChild(newForm, oldForm);
         }
@@ -134,6 +160,7 @@ class ClassHelper extends HTMLElement {
             "Search": "Search",
             "Reset": "Reset"
         };
+        ClassHelper.translations = translations;
 
         let tracker = window.location.pathname.split('/')[1];
         let url = new URL(window.location.origin + "/" + tracker);
@@ -152,9 +179,58 @@ class ClassHelper extends HTMLElement {
         try {
             ClassHelper.translations = await resp.json();
         } catch (error) {
-            // Default to english translations
-            ClassHelper.translations = translations;
             throw new Error("error parsing translation json from roundup rest api");
+        }
+    }
+
+    /** @param {ClassHelperProps} props  */
+    async fetchDropdowns(props) {
+        // Singleton implementation
+        if (this.dropdowns != null) {
+            return;
+        }
+        this.dropdowns = {};
+
+        if (this.getAttribute("searchWith") == null) {
+            return;
+        }
+
+        const params = this.getAttribute("searchWith").split(',');
+
+        for (let param of params) {
+            if (param.includes("[]")) {
+                const splitResult = param.split("[]");
+                param = splitResult[0];
+                const sortOrder = splitResult[1];
+
+                let url = `${props.origin}/${props.tracker}/rest/data/${param}?@fields=id,name`;
+                if (sortOrder) {
+                    url += `&@sort=${sortOrder}`;
+                }
+
+                let resp;
+                try {
+                    resp = await fetch(url);
+                    if (!resp.ok) throw new Error();
+                } catch (error) {
+                    console.error(error);
+                    throw new Error("error fetching dropdowns from roundup rest api");
+                }
+
+                let json;
+                try {
+                    json = await resp.json();
+                } catch (error) {
+                    throw new Error("error parsing dropdown json from roundup rest api");
+                }
+
+                let list = new Map();
+                for (let entry of json.data.collection) {
+                    list.set(entry.id, entry.name);
+                }
+
+                this.dropdowns[param] = list;
+            }
         }
     }
 
@@ -257,13 +333,7 @@ class ClassHelper extends HTMLElement {
      */
     static getRestURL(props) {
         const restDataPath = "rest/data";
-        const origin = window.location.origin;
-        const tracker = window.location.pathname.split('/')[1];
-        if (!tracker || tracker < 1) {
-            throw new Error("error parsing tracker name from window url");
-        }
-
-        const base = origin + "/" + tracker + "/" + restDataPath + "/" + props.apiClassName;
+        const base = props.origin + "/" + props.tracker + "/" + restDataPath + "/" + props.apiClassName;
         let url = new URL(base);
 
         url.searchParams.append("@page_index", props.pageIndex);
@@ -291,10 +361,6 @@ class ClassHelper extends HTMLElement {
 
     getSearchFragment() {
         const fragment = document.createDocumentFragment();
-
-        const divsearch = document.createElement("div");
-        divsearch.classList.add("popup-divsearch"); // Add class for styling
-
         const form = document.createElement("form");
         form.classList.add("popup-search"); // Add class for styling
 
@@ -304,29 +370,41 @@ class ClassHelper extends HTMLElement {
         table.classList.add("search-table"); // Add class for styling
 
         for (var param of params) {
+            param = param.split("[]")[0];
+
             const row = document.createElement("tr");
             const labelCell = document.createElement("td");
             const inputCell = document.createElement("td");
 
             const label = document.createElement("label");
             label.setAttribute("class", "searchlabel");
-            label.textContent = param + ":";
-            label.setAttribute("for", param);
             label.classList.add("search-label"); // Add class for styling
+            label.classList.add("bold-label"); // Add class for styling
+            label.setAttribute("for", param);
+            label.textContent = param + ":";
 
-            if (param === "username" || param === "phone" || param === "roles") {
-                label.classList.add("bold-label"); // Add class for styling
+            let input;
+            if (this.dropdowns[param]) {
+                input = document.createElement("select");
+                for (let key of this.dropdowns[param].keys()) {
+                    let option = document.createElement("option");
+                    option.value = key;
+                    option.textContent = this.dropdowns[param].get(key);
+                    input.appendChild(option);
+                }
+            } else {
+                input = document.createElement("input");
+                input.setAttribute("type", "text");
             }
 
-            const input = document.createElement("input");
             input.setAttribute("name", param);
             input.setAttribute("id", param);
-            input.classList.add("search-input"); // Add class for styling
+            input.classList.add("search-input"); // Add class for styling   
 
             labelCell.appendChild(label);
-            row.appendChild(labelCell);
-
             inputCell.appendChild(input);
+
+            row.appendChild(labelCell);
             row.appendChild(inputCell);
 
             table.appendChild(row);
@@ -358,6 +436,12 @@ class ClassHelper extends HTMLElement {
         reset.addEventListener("click", (e) => {
             e.preventDefault();
             form.reset();
+            let fd = new FormData(form);
+            this.dispatchEvent(new CustomEvent("search", {
+                detail: {
+                    value: fd
+                }
+            }));
         });
 
         buttonCell.appendChild(search);
@@ -368,8 +452,7 @@ class ClassHelper extends HTMLElement {
         table.appendChild(buttonRow);
 
         form.appendChild(table);
-        divsearch.appendChild(form);
-        fragment.appendChild(divsearch);
+        fragment.appendChild(form);
 
         return fragment;
     }
@@ -418,8 +501,8 @@ class ClassHelper extends HTMLElement {
 
     getAccumulatorFragment(preSelectedValues) {
         const fragment = document.createDocumentFragment();
-        const divacc = document.createElement("div");
-        divacc.setAttribute("class", "popup-control");
+        const container = document.createElement("div");
+        container.setAttribute("class", "popup-control");
 
         const preview = document.createElement("input");
         preview.setAttribute("class", "popup-preview");
@@ -450,8 +533,8 @@ class ClassHelper extends HTMLElement {
             }))
         })
 
-        divacc.append(preview, cancel, apply);
-        fragment.appendChild(divacc);
+        container.append(preview, cancel, apply);
+        fragment.appendChild(container);
 
         return fragment;
     }
