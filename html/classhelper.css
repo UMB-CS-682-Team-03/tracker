@@ -87,6 +87,12 @@ table tr:hover {
     color: blue;
 }
 
+.popup-pagination button:disabled {
+    color: gray;
+    opacity: 0.4;
+    cursor: default;
+}
+
 /* Search */
 .popup-search {
     border-bottom: 2px solid #444;
