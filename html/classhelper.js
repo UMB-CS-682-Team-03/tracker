@@ -26,14 +26,68 @@
 // Let user customize the css file name
 const CSS_FILE_NAME = "@@file/classhelper.css";
 
+const CLASSHELPER_TAG_NAME = "roundup-classhelper";
+
+/**
+ * This is a custom web component(user named html tag) that wraps a helpurl link 
+ * and provides additional functionality.
+ * 
+ * The classhelper is an interactive popup window that displays a table of data.
+ * Users can interact with this window to search, navigate and select data from the table.
+ * The selected data is either "Id" or "a Value" from the table row.
+ * There can be multiple selections in the table.
+ * The selected data is then populated in a form field in the main window.
+ * 
+ * How to use.
+ * ------------
+ * The helpurl must be wrapped under this web component(user named html tag).
+ * ```html
+ * <roundup-classhelper searchWith="title,status[],keyword[]+name">
+ *   ( helpurl template here, this can be tal, chameleon, jinja2.
+ *     In HTML DOM this is an helpurl anchor tag.
+ *    )
+ * </roundup-classhelper>
+ * ```
+ * 
+ * The searchWith attribute of the web component is optional.
+ * 
+ * searchWith attribute value is a list of comma separated names of table data fields.
+ * (It is possible that a data field is present in search form but absent in the table).
+ * 
+ * A square parentheses open+close ("[]") can be added to the column name eg."status[]",
+ * this will make that search field as a dropdown in the search form in popup window, 
+ * then a user can see all the possible values that column can have.
+ * 
+ * eg. searchWith="title,status[],keyword[]+name" where status can have values like "open", 
+ * "closed" a dropdown will be shown with null, open and closed. This is an aesthetic usage 
+ * instead of writing in a text field for options in status.
+ * 
+ * A plus sign or minus sign with data field can be used to specify the sort order of the dropdown.
+ * In the above example, keyword[]+name will sort the dropdown in ascending order(a-z) of name of the keyword.
+ * A value keyword[]-name will sort the dropdown in descending order(z-a) of name of the keyword.
+ * 
+ * searchWith="<<column name>>[]{+|-}{id|name}"
+ * Here column name is required,
+ * optionally there can be [] for a dropdown,
+ * optionally with "[]" present to a column name there can be 
+ * [+ or -] with succeeding "id" or "name" for sorting dropdown.
+ * 
+ */
 class ClassHelper extends HTMLElement {
-    /** @type {Window} */
+    /** @type {Window} handler to popup window */
     popupRef = null;
 
-    /** @type {Object.<string, string>} Translation */
+    /** 
+     * Result from making a call to the rest api, for the translation keywords.
+     * @type {Object.<string, string>} */
     static translations = null;
 
-    /** @type {Object.<string, Object.<string, string>>} */
+    /** 
+     * Stores the result from api calls made to rest api,
+     * for the parameters in searchWith attribute of this web component
+     * where a parameter is defined as a dropdown in 
+     * @type {Object.<string, Object.<string, string>>} 
+     * */
     dropdowns = null;
 
     connectedCallback() {
@@ -916,7 +970,7 @@ function enableClassHelper() {
     /**@todo - make api call? get 404 then early return? */
     // http://localhost/demo/rest
 
-    customElements.define("roundup-classhelper", ClassHelper);
+    customElements.define(CLASSHELPER_TAG_NAME, ClassHelper);
 }
 
 enableClassHelper();
