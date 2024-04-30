@@ -1,17 +1,26 @@
 /**
+ * Properties for the ClassHelper component, 
+ * made into a type for better readability.
  * @typedef {Object} ClassHelperProps
+ * The qualified domain name with protocol and port(if any)
  * @property {string} origin
+ * The tracker name from the url
  * @property {string} tracker
- * @property {number} width
- * @property {number} height
+ * Type of data that needs to be shown (eg. issue, user, keywords) parsed from helpurl
  * @property {string} apiClassName
- * @property {string} tableSelectionType
+ * @property {number} width // width of the popup window
+ * @property {number} height // height of the popup window
+ * The form on which the classhelper is being used
  * @property {string} formName
+ * The form property on which the classhelper is being used
  * @property {string} formProperty
+ * @property {string} tableSelectionType // it has to be "checkbox" or "radio"(if any)
+ * The fields on which the table is sorted
+ * @property {string[]} sort
+ * The actual fields to be displayed in the table
+ * @property {string[]} fields
  * @property {number} pageIndex
  * @property {number} pageSize
- * @property {string[]} sort
- * @property {string[]} fields
  */
 
 // Let user customize the css file name
