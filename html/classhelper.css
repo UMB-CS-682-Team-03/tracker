@@ -98,8 +98,9 @@ table tr:hover {
     border-bottom: 2px solid #444;
 }
 
-.searchlabel {
+.search-label {
     text-transform: capitalize;
+    font-weight: bold;
 }
 
 

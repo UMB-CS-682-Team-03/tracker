@@ -439,9 +439,7 @@ class ClassHelper extends HTMLElement {
             const inputCell = document.createElement("td");
 
             const label = document.createElement("label");
-            label.setAttribute("class", "searchlabel");
             label.classList.add("search-label"); // Add class for styling
-            label.classList.add("bold-label"); // Add class for styling
             label.setAttribute("for", param);
             label.textContent = param + ":";
 
