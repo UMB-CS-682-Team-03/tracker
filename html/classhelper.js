@@ -1,7 +1,7 @@
 /**
  * Properties for the ClassHelper component, 
  * made into a type for better readability.
- * @typedef {Object} ClassHelperProps
+ * @typedef {Object} HelpUrlProps
  * The qualified domain name with protocol and port(if any)
  * @property {string} origin
  * The tracker name from the url
@@ -94,8 +94,8 @@ class ClassHelper extends HTMLElement {
     helpurl = null;
     helpurlScript = null;
 
-    /** @type {ClassHelperProps} */
-    properties = null;
+    /** @type {HelpUrlProps} */
+    helpurlProps = null;
 
     /** no-op function */
     preventDefault = e => e.preventDefault();
@@ -106,9 +106,13 @@ class ClassHelper extends HTMLElement {
 
         try {
             this.helpurl = this.findClassHelpLink();
+
+            // Removing the helpurl click behavior
             this.helpurlScript = this.helpurl.getAttribute("onclick");
             this.helpurl.setAttribute("onclick", "");
             this.helpurl.addEventListener("click", this.preventDefault);
+
+            this.helpurlProps = ClassHelper.parseHelpUrlData(this.helpurl);
         } catch (err) {
             console.warn("Classhelper not intercepting helpurl.");
             if (this.helpurl != null) {
@@ -120,8 +124,8 @@ class ClassHelper extends HTMLElement {
         }
 
         try {
-            this.properties = ClassHelper.parseHelpUrlData(this.helpurl);
-            apiURL = ClassHelper.getRestURL(this.properties);
+            this.helpurlProps = ClassHelper.parseHelpUrlData(this.helpurl);
+            apiURL = ClassHelper.getRestURL(this.helpurlProps);
         } catch (e) {
             // Failed parsing props -> reset, log and return.
             this.helpurl.removeEventListener("click", this.preventDefault);
@@ -137,7 +141,7 @@ class ClassHelper extends HTMLElement {
             console.error(error.message);
         });
 
-        this.fetchDropdowns(this.properties).catch(error => {
+        this.fetchDropdowns(this.helpurlProps).catch(error => {
             // Top level handling for dropdowns errors.
             console.error(error.message);
         });
@@ -149,14 +153,14 @@ class ClassHelper extends HTMLElement {
         }
 
         const handleClickEvent = (event) => {
-            this.openPopUp(apiURL, this.properties).catch(error => {
+            this.openPopUp(apiURL, this.helpurlProps).catch(error => {
                 // Top level error handling for openPopUp method.
                 cleanUpClosure();
             });
         };
 
         const handleNextPageEvent = (event) => {
-            this.pageChange(event.detail.value, this.properties).catch(error => {
+            this.pageChange(event.detail.value, this.helpurlProps).catch(error => {
                 // Top level error handling for nextPage method.
                 this.removeEventListener("nextPage", handleNextPageEvent);
                 cleanUpClosure();
@@ -164,7 +168,7 @@ class ClassHelper extends HTMLElement {
         }
 
         const handlePrevPageEvent = (event) => {
-            this.pageChange(event.detail.value, this.properties).catch(error => {
+            this.pageChange(event.detail.value, this.helpurlProps).catch(error => {
                 // Top level error handling for prevPage method.
                 this.removeEventListener("prevPage", handlePrevPageEvent);
                 cleanUpClosure();
@@ -173,13 +177,13 @@ class ClassHelper extends HTMLElement {
 
         const handleValueSelectedEvent = (event) => {
             // does not throw error
-            this.valueSelected(this.properties, event.detail.value);
+            this.valueSelected(this.helpurlProps, event.detail.value);
         }
 
         const handleSearchEvent = (event) => {
-            this.properties.pageIndex = 1;
-            const searchURL = ClassHelper.getSearchURL(this.properties, event.detail.value);
-            this.searchEvent(searchURL, this.properties).catch(error => {
+            this.helpurlProps.pageIndex = 1;
+            const searchURL = ClassHelper.getSearchURL(this.helpurlProps, event.detail.value);
+            this.searchEvent(searchURL, this.helpurlProps).catch(error => {
                 // Top level error handling for searchEvent method.
                 this.removeEventListener("search", handleSearchEvent);
                 cleanUpClosure();
@@ -252,7 +256,7 @@ class ClassHelper extends HTMLElement {
         }
     }
 
-    /** @param {ClassHelperProps} props  */
+    /** @param {HelpUrlProps} props  */
     async fetchDropdowns(props) {
         // Singleton implementation
         if (this.dropdowns != null) {
@@ -336,7 +340,7 @@ class ClassHelper extends HTMLElement {
     /**
      * This method parses the helpurl link to get the necessary data for the classhelper.
      * @param {HTMLAnchorElement} link
-     * @returns {ClassHelperProps}
+     * @returns {HelpUrlProps}
      */
     static parseHelpUrlData(link) {
         const width = parseInt(link.dataset.width);
@@ -352,7 +356,7 @@ class ClassHelper extends HTMLElement {
         const urlParts = link.dataset.helpurl.split("?");
 
         if (urlParts.length != 2) {
-            throw new Error("invalid helpurl from link");
+            throw new Error("invalid helpurl from link, missing query params");
         }
 
         const apiClassName = urlParts[0];
@@ -402,7 +406,7 @@ class ClassHelper extends HTMLElement {
     /** 
      * from roundup docs rest api url - "{host}/{tracker}
      * we pass helpurl which is parsed from anchor tag and return a URL.
-     * @param {ClassHelperProps} props
+     * @param {HelpUrlProps} props
      * @returns {URL}
      * @throws {Error}
      */
@@ -757,7 +761,7 @@ class ClassHelper extends HTMLElement {
     /**
      * main method called when classhelper is clicked
      * @param {URL | string} apiURL
-     * @param {ClassHelperProps} props 
+     * @param {HelpUrlProps} props 
      * @throws {Error} when fetching or parsing data from roundup rest api fails
      */
     async openPopUp(apiURL, props) {
@@ -833,7 +837,7 @@ class ClassHelper extends HTMLElement {
 
     /** method when next or previous button is clicked
      * @param {URL | string} apiURL
-     * @param {ClassHelperProps} props
+     * @param {HelpUrlProps} props
      * @throws {Error} when fetching or parsing data from roundup rest api fails
      */
     async pageChange(apiURL, props) {
@@ -884,7 +888,7 @@ class ClassHelper extends HTMLElement {
     }
 
     /** method when a value is selected in 
-     * @param {ClassHelperProps} props
+     * @param {HelpUrlProps} props
      * @param {string} value
      */
     valueSelected(props, value) {
@@ -895,7 +899,7 @@ class ClassHelper extends HTMLElement {
 
     /** method when search is performed within classhelper, here we need to update the classhelper table with search results
      * @param {URL | string} apiURL
-     * @param {ClassHelperProps} props
+     * @param {HelpUrlProps} props
      * @throws {Error} when fetching or parsing data from roundup rest api fails
      */
     async searchEvent(apiURL, props) {
