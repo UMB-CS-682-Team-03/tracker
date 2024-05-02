@@ -147,35 +147,36 @@ class ClassHelper extends HTMLElement {
         }
 
         const handleClickEvent = (event) => {
-            if (this.popupRef == null) {
-                this.openPopUp(initialRequestURL, this.helpurlProps)
-                    .catch(error => {
-                        // Top level error handling for openPopUp method.
-                        cleanUpClosure();
-                    });
-            } else {
-                // this.popupRef.focus();
-                const form = this.popupRef.document.getElementById("popup-search");
-                const formData = new FormData(form);
-                const accumulatedValues = this.popupRef.document.getElementById("popup-preview").value;
-                this.popupRef.close();
-
-                const requestURL = ClassHelper.getSearchURL(this.trackerBaseURL, this.helpurlProps, formData);
-
-                this.openPopUp(requestURL, this.helpurlProps, accumulatedValues.split(","), formData)
-                    .catch(error => {
-                        // Top level error handling for openPopUp method.
-                        cleanUpClosure();
-                    });
+            if (this.popupRef != null && !this.popupRef.closed) {
+                this.popupRef.focus();
+                return;
             }
+
+            this.openPopUp(initialRequestURL, this.helpurlProps)
+                .catch(error => {
+                    // Top level error handling for openPopUp method.
+                    cleanUpClosure();
+
+                    if (this.popupRef != null) {
+                        const fragment = this.getErrorFragment("An error occurred while opening the popup window");
+                        this.popupRef.document.body.innerHTML = ""
+                        this.popupRef.document.body.appendChild(fragment);
+                    }
+
+                    console.error(error);
+                });
         };
 
         const handleNextPageEvent = (event) => {
             this.pageChange(event.detail.value, this.helpurlProps)
                 .catch(error => {
                     // Top level error handling for nextPage method.
-                    this.removeEventListener("nextPage", handleNextPageEvent);
                     cleanUpClosure();
+                    const fragment = this.getErrorFragment("An error occurred while fetching the next page of table");
+                    this.popupRef.document.body.innerHTML = ""
+                    this.popupRef.document.body.appendChild(fragment);
+
+                    console.error(error, `request data url: ${event.detail.value}`);
                 });
         }
 
@@ -183,8 +184,12 @@ class ClassHelper extends HTMLElement {
             this.pageChange(event.detail.value, this.helpurlProps)
                 .catch(error => {
                     // Top level error handling for prevPage method.
-                    this.removeEventListener("prevPage", handlePrevPageEvent);
                     cleanUpClosure();
+                    const fragment = this.getErrorFragment("An error occurred while fetching the previous page of table");
+                    this.popupRef.document.body.innerHTML = ""
+                    this.popupRef.document.body.appendChild(fragment);
+
+                    console.error(error, `request data url: ${event.detail.value}`);
                 });
         }
 
@@ -199,8 +204,12 @@ class ClassHelper extends HTMLElement {
             this.searchEvent(searchURL, this.helpurlProps)
                 .catch(error => {
                     // Top level error handling for searchEvent method.
-                    this.removeEventListener("search", handleSearchEvent);
                     cleanUpClosure();
+                    const fragment = this.getErrorFragment("An error occurred while fetching the search results");
+                    this.popupRef.document.body.innerHTML = ""
+                    this.popupRef.document.body.appendChild(fragment);
+
+                    console.error(error, `request data url: ${event.detail.value}`);
                 });
         }
 
@@ -439,6 +448,32 @@ class ClassHelper extends HTMLElement {
             }
         }
         return url;
+    }
+
+    getErrorFragment(message) {
+        const fragment = document.createDocumentFragment();
+        const div = document.createElement("div");
+        div.classList.add("error-div");
+        const h3_1 = document.createElement("h3");
+        h3_1.textContent = message;
+        const h3_2 = document.createElement("h3");
+        h3_2.textContent = "Classhelper will not intercept helpurl link.";
+        const h3_3 = document.createElement("h3");
+        h3_3.textContent = "Using fallback helpurl instead.";
+        const h3_4 = document.createElement("h3");
+        h3_4.textContent = "Please check the console for more details.";
+
+        const button = document.createElement("button");
+        button.textContent = "Close Popup";
+
+        button.addEventListener("click", () => {
+            this.popupRef.close();
+        });
+
+        div.append(h3_1, h3_2, h3_3, h3_4, button);
+        fragment.appendChild(div);
+
+        return fragment;
     }
 
     getSearchFragment(formData) {
@@ -769,6 +804,8 @@ class ClassHelper extends HTMLElement {
             const input = document.getElementsByName(props.formProperty).item(0);
             if (input.value) {
                 preSelectedValues = input.value.split(',');
+            } else {
+                preSelectedValues = [];
             }
         }
 
@@ -833,10 +870,6 @@ class ClassHelper extends HTMLElement {
 
         const accumulatorFrag = this.getAccumulatorFragment(preSelectedValues);
         popupBody.appendChild(accumulatorFrag);
-
-        this.popupRef.addEventListener("beforeunload", () => {
-            this.popupRef = null;
-        });
 
         this.popupRef.document.addEventListener("keydown", (e) => {
             if (e.target.tagName == "TR") {
