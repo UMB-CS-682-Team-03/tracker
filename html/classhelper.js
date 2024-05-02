@@ -24,6 +24,10 @@ const CSS_FILE_NAME = "@@file/classhelper.css";
 
 const CLASSHELPER_TAG_NAME = "roundup-classhelper";
 
+const ALTERNATIVE_DROPDOWN_PATHNAMES = {
+    "roles": "/rest/roles"
+}
+
 /**
  * This is a custom web component(user named html tag) that wraps a helpurl link 
  * and provides additional functionality.
@@ -296,7 +300,15 @@ class ClassHelper extends HTMLElement {
                 const segments = param.split("[]");
                 param = segments[0];
                 const sortOrder = segments[1];
-                let url = `${this.trackerBaseURL}/rest/data/${param}?@fields=id,name`;
+
+                let url = this.trackerBaseURL;
+                if (ALTERNATIVE_DROPDOWN_PATHNAMES[param]) {
+                    url += ALTERNATIVE_DROPDOWN_PATHNAMES[param];
+                } else {
+                    url += `/rest/data/${param}`;
+                }
+                url += "?@verbose=2";
+
                 if (sortOrder) {
                     url += `&@sort=${sortOrder}`;
                 }
@@ -317,10 +329,20 @@ class ClassHelper extends HTMLElement {
                 }
 
                 let list = new Map();
-                for (let entry of json.data.collection) {
-                    list.set(entry.id, entry.name);
-                }
 
+                if (json.data.collection.length > 0) {
+                    let idKey = "id";
+                    let valueKey = Object.keys(json.data.collection[0]).find(key => key !== "id" && key !== "link");
+
+                    if (!valueKey) {
+                        throw new Error("No value key found in dropdown data for: " + url);
+                    }
+
+                    for (let entry of json.data.collection) {
+                        list.set(entry[idKey], entry[valueKey]);
+                    }
+
+                }
                 this.dropdowns[param] = list;
             }
         }
