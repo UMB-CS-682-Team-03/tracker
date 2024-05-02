@@ -127,43 +127,49 @@ class ClassHelper extends HTMLElement {
 
         const initialRequestURL = ClassHelper.getRestURL(this.trackerBaseURL, this.helpurlProps);
 
-        ClassHelper.fetchTranslations().catch(error => {
-            console.warn("Classhelper failed in translating.")
-            console.error(error);
-        });
+        ClassHelper.fetchTranslations()
+            .catch(error => {
+                console.warn("Classhelper failed in translating.")
+                console.error(error);
+            });
 
-        this.fetchDropdowns().catch(error => {
-            // Top level handling for dropdowns errors.
-            console.error(error);
-        });
+        this.fetchDropdowns()
+            .catch(error => {
+                // Top level handling for dropdowns errors.
+                console.error(error);
+            });
 
         const cleanUpClosure = () => {
+            console.warn("Classhelper not intercepting helpurl.");
             this.removeEventListener("click", handleClickEvent);
             this.helpurl.removeEventListener("click", this.preventDefault);
             this.helpurl.setAttribute("onclick", this.helpurlScript);
         }
 
         const handleClickEvent = (event) => {
-            this.openPopUp(initialRequestURL, this.helpurlProps).catch(error => {
-                // Top level error handling for openPopUp method.
-                cleanUpClosure();
-            });
+            this.openPopUp(initialRequestURL, this.helpurlProps)
+                .catch(error => {
+                    // Top level error handling for openPopUp method.
+                    cleanUpClosure();
+                });
         };
 
         const handleNextPageEvent = (event) => {
-            this.pageChange(event.detail.value, this.helpurlProps).catch(error => {
-                // Top level error handling for nextPage method.
-                this.removeEventListener("nextPage", handleNextPageEvent);
-                cleanUpClosure();
-            });
+            this.pageChange(event.detail.value, this.helpurlProps)
+                .catch(error => {
+                    // Top level error handling for nextPage method.
+                    this.removeEventListener("nextPage", handleNextPageEvent);
+                    cleanUpClosure();
+                });
         }
 
         const handlePrevPageEvent = (event) => {
-            this.pageChange(event.detail.value, this.helpurlProps).catch(error => {
-                // Top level error handling for prevPage method.
-                this.removeEventListener("prevPage", handlePrevPageEvent);
-                cleanUpClosure();
-            });
+            this.pageChange(event.detail.value, this.helpurlProps)
+                .catch(error => {
+                    // Top level error handling for prevPage method.
+                    this.removeEventListener("prevPage", handlePrevPageEvent);
+                    cleanUpClosure();
+                });
         }
 
         const handleValueSelectedEvent = (event) => {
@@ -174,11 +180,12 @@ class ClassHelper extends HTMLElement {
         const handleSearchEvent = (event) => {
             this.helpurlProps.pageIndex = 1;
             const searchURL = ClassHelper.getSearchURL(this.trackerBaseURL, this.helpurlProps, event.detail.value);
-            this.searchEvent(searchURL, this.helpurlProps).catch(error => {
-                // Top level error handling for searchEvent method.
-                this.removeEventListener("search", handleSearchEvent);
-                cleanUpClosure();
-            });
+            this.searchEvent(searchURL, this.helpurlProps)
+                .catch(error => {
+                    // Top level error handling for searchEvent method.
+                    this.removeEventListener("search", handleSearchEvent);
+                    cleanUpClosure();
+                });
         }
 
         const handleSelectionEvent = (event) => {
