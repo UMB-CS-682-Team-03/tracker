@@ -147,19 +147,27 @@ class ClassHelper extends HTMLElement {
         }
 
         const handleClickEvent = (event) => {
-            if (this.popupRef != null) {
+            if (this.popupRef == null) {
+                this.openPopUp(initialRequestURL, this.helpurlProps)
+                    .catch(error => {
+                        // Top level error handling for openPopUp method.
+                        cleanUpClosure();
+                    });
+            } else {
                 // this.popupRef.focus();
-                // const form = this.popupRef.document.getElementById("popup-search");
-                // const formData = new FormData(form);
-                // const accumulatedValues = this.popupRef.document.getElementById("popup-preview").value;
+                const form = this.popupRef.document.getElementById("popup-search");
+                const formData = new FormData(form);
+                const accumulatedValues = this.popupRef.document.getElementById("popup-preview").value;
                 this.popupRef.close();
-            }
 
-            this.openPopUp(initialRequestURL, this.helpurlProps)
-                .catch(error => {
-                    // Top level error handling for openPopUp method.
-                    cleanUpClosure();
-                });
+                const requestURL = ClassHelper.getSearchURL(this.trackerBaseURL, this.helpurlProps, formData);
+
+                this.openPopUp(requestURL, this.helpurlProps, accumulatedValues.split(","), formData)
+                    .catch(error => {
+                        // Top level error handling for openPopUp method.
+                        cleanUpClosure();
+                    });
+            }
         };
 
         const handleNextPageEvent = (event) => {
@@ -433,7 +441,7 @@ class ClassHelper extends HTMLElement {
         return url;
     }
 
-    getSearchFragment() {
+    getSearchFragment(formData) {
         const fragment = document.createDocumentFragment();
         const form = document.createElement("form");
         form.setAttribute("id", "popup-search");
@@ -469,11 +477,24 @@ class ClassHelper extends HTMLElement {
                     let option = document.createElement("option");
                     option.value = key;
                     option.textContent = this.dropdowns[param].get(key);
+                    if (formData) {
+                        let value = formData.get(param);
+                        if (value && value == key) {
+                            option.selected = "selected";
+                        }
+                    }
                     input.appendChild(option);
                 }
             } else {
                 input = document.createElement("input");
                 input.setAttribute("type", "text");
+
+                if (formData) {
+                    let value = formData.get(param);
+                    if (value) {
+                        input.value = value;
+                    }
+                }
             }
 
             input.setAttribute("name", param);
@@ -738,14 +759,17 @@ class ClassHelper extends HTMLElement {
      * main method called when classhelper is clicked
      * @param {URL | string} apiURL
      * @param {HelpUrlProps} props 
+     * @param {string[]} preSelectedValues
+     * @param {FormData} formData
      * @throws {Error} when fetching or parsing data from roundup rest api fails
      */
-    async openPopUp(apiURL, props) {
-        // Find preselected values
-        const input = document.getElementsByName(props.formProperty).item(0);
-        let preSelectedValues = [];
-        if (input.value) {
-            preSelectedValues = input.value.split(',');
+    async openPopUp(apiURL, props, preSelectedValues, formData) {
+        if (!preSelectedValues) {
+            // Find preselected values
+            const input = document.getElementsByName(props.formProperty).item(0);
+            if (input.value) {
+                preSelectedValues = input.value.split(',');
+            }
         }
 
         const popupFeatures = `popup=yes,width=${props.width},height=${props.height}`;
@@ -793,7 +817,7 @@ class ClassHelper extends HTMLElement {
         popupBody.classList.add("flex-container");
 
         if (this.getAttribute("searchWith")) {
-            const searchFrag = this.getSearchFragment();
+            const searchFrag = this.getSearchFragment(formData);
             popupBody.appendChild(searchFrag);
         }
 
