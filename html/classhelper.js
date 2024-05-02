@@ -7,14 +7,14 @@
  * @property {number} width // width of the popup window
  * @property {number} height // height of the popup window
  * The form on which the classhelper is being used
- * @property {string} formName
+ * @property {string | null} formName
  * The form property on which the classhelper is being used
- * @property {string} formProperty
- * @property {string} tableSelectionType // it has to be "checkbox" or "radio"(if any)
+ * @property {string | null} formProperty
+ * @property {string | null} tableSelectionType // it has to be "checkbox" or "radio"(if any)
  * The fields on which the table is sorted
- * @property {string[]} sort
+ * @property {string[] | undefined} sort
  * The actual fields to be displayed in the table
- * @property {string[]} fields
+ * @property {string[] | undefined} fields
  * @property {number} pageIndex
  * @property {number} pageSize
  */
@@ -82,7 +82,7 @@ class ClassHelper extends HTMLElement {
      * Stores the result from api calls made to rest api,
      * for the parameters in searchWith attribute of this web component
      * where a parameter is defined as a dropdown in 
-     * @type {Object.<string, Object.<string, string>>} */
+     * @type {Object.<string, Map.<string, string>>} */
     dropdowns = null;
 
     /** @type {HTMLAnchorElement} */
@@ -128,15 +128,13 @@ class ClassHelper extends HTMLElement {
         const initialRequestURL = ClassHelper.getRestURL(this.trackerBaseURL, this.helpurlProps);
 
         ClassHelper.fetchTranslations().catch(error => {
-            // Top level handling for translation errors.
-            // Fallbacks to use english keywords.
-            /** @todo think about the showing it to user */
-            console.error(error.message);
+            console.warn("Classhelper failed in translating.")
+            console.error(error);
         });
 
-        this.fetchDropdowns(this.helpurlProps).catch(error => {
+        this.fetchDropdowns().catch(error => {
             // Top level handling for dropdowns errors.
-            console.error(error.message);
+            console.error(error);
         });
 
         const cleanUpClosure = () => {
@@ -236,21 +234,19 @@ class ClassHelper extends HTMLElement {
         let resp;
         try {
             resp = await fetch(url);
-            if (!resp.ok) throw new Error();
+            if (!resp.ok) throw new Error("Not 2xx status code.", { cause: resp });
         } catch (error) {
-            console.error(error);
-            throw new Error("error fetching translations from roundup rest api");
+            throw new Error("error fetching translations from roundup rest api", { cause: error });
         }
 
         try {
             ClassHelper.translations = await resp.json();
         } catch (error) {
-            throw new Error("error parsing translation json from roundup rest api");
+            throw new Error("error parsing translation json from roundup rest api", { cause: error });
         }
     }
 
-    /** @param {HelpUrlProps} props  */
-    async fetchDropdowns(props) {
+    async fetchDropdowns() {
         // Singleton implementation
         if (this.dropdowns != null) {
             return;
@@ -265,9 +261,9 @@ class ClassHelper extends HTMLElement {
 
         for (let param of params) {
             if (param.includes("[]")) {
-                const splitResult = param.split("[]");
-                param = splitResult[0];
-                const sortOrder = splitResult[1];
+                const segments = param.split("[]");
+                param = segments[0];
+                const sortOrder = segments[1];
                 let url = `${this.trackerBaseURL}/rest/data/${param}?@fields=id,name`;
                 if (sortOrder) {
                     url += `&@sort=${sortOrder}`;
@@ -276,10 +272,9 @@ class ClassHelper extends HTMLElement {
                 let resp;
                 try {
                     resp = await fetch(url);
-                    if (!resp.ok) throw new Error();
+                    if (!resp.ok) throw new Error("Not 2xx status code.", { cause: resp });
                 } catch (error) {
-                    console.error(error);
-                    throw new Error("error fetching dropdowns from roundup rest api");
+                    throw new Error("error fetching dropdowns from roundup rest api", { cause: error });
                 }
 
                 let json;
@@ -302,7 +297,7 @@ class ClassHelper extends HTMLElement {
     /**
      * Find the anchor tag that provides the classhelp link.
      * @returns {HTMLAnchorElement}
-     * @throws {Error} when there are no links or more than one link
+     * @throws {Error} when the anchor tag is not classhelp link
      */
     findClassHelpLink() {
         const links = this.querySelectorAll("a");
@@ -334,6 +329,7 @@ class ClassHelper extends HTMLElement {
      * This method parses the helpurl link to get the necessary data for the classhelper.
      * @param {HTMLAnchorElement} link
      * @returns {HelpUrlProps}
+     * @throws {Error} when the helpurl link is not proper
      */
     static parseHelpUrlProps(link) {
         const width = parseInt(link.dataset.width);
