@@ -147,6 +147,14 @@ class ClassHelper extends HTMLElement {
         }
 
         const handleClickEvent = (event) => {
+            if (this.popupRef != null) {
+                // this.popupRef.focus();
+                // const form = this.popupRef.document.getElementById("popup-search");
+                // const formData = new FormData(form);
+                // const accumulatedValues = this.popupRef.document.getElementById("popup-preview").value;
+                this.popupRef.close();
+            }
+
             this.openPopUp(initialRequestURL, this.helpurlProps)
                 .catch(error => {
                     // Top level error handling for openPopUp method.
@@ -793,6 +801,10 @@ class ClassHelper extends HTMLElement {
         const accumulatorFrag = this.getAccumulatorFragment(preSelectedValues);
         popupBody.appendChild(accumulatorFrag);
 
+        this.popupRef.addEventListener("beforeunload", () => {
+            this.popupRef = null;
+        });
+
         this.popupRef.document.addEventListener("keydown", (e) => {
             if (e.target.tagName == "TR") {
                 if (e.key === "ArrowDown") {
@@ -885,10 +897,10 @@ class ClassHelper extends HTMLElement {
 
         const popupDocument = this.popupRef.document;
         const popupBody = this.popupRef.document.body;
-        props.pageIndex = selfPageURL.searchParams.get("@page_index");
+        const pageIndex = selfPageURL.searchParams.get("@page_index");
 
         const oldPaginationFrag = popupDocument.getElementById("popup-pagination");
-        const newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize);
+        const newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, pageIndex, props.pageSize);
         popupBody.replaceChild(newPaginationFrag, oldPaginationFrag);
 
         let oldTableFrag = popupDocument.getElementById("popup-tablediv");
@@ -947,12 +959,12 @@ class ClassHelper extends HTMLElement {
 
         const popupDocument = this.popupRef.document;
         const popupBody = this.popupRef.document.body;
-        props.pageIndex = selfPageURL.searchParams.get("@page_index");
+        const pageIndex = selfPageURL.searchParams.get("@page_index");
 
         const oldPaginationFrag = popupDocument.getElementById("popup-pagination");
         let newPaginationFrag;
         if (prevPageURL || nextPageURL) {
-            newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize);
+            newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, pageIndex, props.pageSize);
         } else {
             newPaginationFrag = popupDocument.createElement("div");
             newPaginationFrag.id = "popup-pagination";
