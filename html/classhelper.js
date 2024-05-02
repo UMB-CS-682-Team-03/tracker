@@ -650,7 +650,7 @@ class ClassHelper extends HTMLElement {
         data.forEach((entry) => {
             const row = document.createElement('tr');
             row.dataset.id = entry[headers[0]];
-            row.setAttribute("tabindex", 1);
+            row.setAttribute("tabindex", 0);
 
             const checkbox = document.createElement("input");
             checkbox.setAttribute("type", "checkbox");
@@ -690,34 +690,6 @@ class ClassHelper extends HTMLElement {
                     value: id
                 }
             }));
-        });
-
-        this.popupRef.document.addEventListener("keydown", (e) => {
-            if (e.target.tagName == "TR") {
-                if (e.key === "ArrowDown") {
-                    if (e.target.nextElementSibling != null) {
-                        e.target.nextElementSibling.focus();
-                    } else {
-                        e.target.parentElement.firstChild.focus();
-                    }
-                }
-                if (e.key === "ArrowUp") {
-                    if (e.target.previousElementSibling != null) {
-                        e.target.previousElementSibling.focus();
-                    } else {
-                        e.target.parentElement.lastChild.focus();
-                    }
-                }
-                if (e.key === "Enter" || e.key === " ") {
-                    let tr = e.target;
-                    tr.children.item(0).checked = !tr.children.item(0).checked;
-                    this.dispatchEvent(new CustomEvent("selection", {
-                        detail: {
-                            value: tr.dataset.id
-                        }
-                    }));
-                }
-            }
         });
 
         // Create table footer with the same column values as headers
@@ -820,6 +792,56 @@ class ClassHelper extends HTMLElement {
 
         const accumulatorFrag = this.getAccumulatorFragment(preSelectedValues);
         popupBody.appendChild(accumulatorFrag);
+
+        this.popupRef.document.addEventListener("keydown", (e) => {
+            if (e.target.tagName == "TR") {
+                if (e.key === "ArrowDown") {
+                    if (e.target.nextElementSibling != null) {
+                        e.target.nextElementSibling.focus();
+                    } else {
+                        e.target.parentElement.firstChild.focus();
+                    }
+                }
+                if (e.key === "ArrowUp") {
+                    if (e.target.previousElementSibling != null) {
+                        e.target.previousElementSibling.focus();
+                    } else {
+                        e.target.parentElement.lastChild.focus();
+                    }
+                }
+                if (e.key === "Enter" || e.key === " ") {
+                    let tr = e.target;
+                    tr.children.item(0).checked = !tr.children.item(0).checked;
+                    this.dispatchEvent(new CustomEvent("selection", {
+                        detail: {
+                            value: tr.dataset.id
+                        }
+                    }));
+                }
+                if (e.key === "ArrowRight") {
+                    this.popupRef.document.getElementById("popup-pagination").lastChild.focus();
+                }
+                if (e.key === "ArrowLeft") {
+                    this.popupRef.document.getElementById("popup-pagination").firstChild.focus();
+                }
+                return;
+            }
+
+            if (e.target.tagName != "INPUT" && e.target.tagName != "SELECT") {
+                if (e.key === "ArrowDown") {
+                    this.popupRef.document.querySelector("tr.rowstyle").parentElement.firstChild.focus();
+                }
+                if (e.key === "ArrowUp") {
+                    this.popupRef.document.querySelector("tr.rowstyle").parentElement.lastChild.focus();
+                }
+                if (e.key === "ArrowRight") {
+                    this.popupRef.document.getElementById("popup-pagination").lastChild.focus();
+                }
+                if (e.key === "ArrowLeft") {
+                    this.popupRef.document.getElementById("popup-pagination").firstChild.focus();
+                }
+            }
+        });
     }
 
     /** method when next or previous button is clicked
