@@ -1028,14 +1028,7 @@ class ClassHelper extends HTMLElement {
         const pageIndex = selfPageURL.searchParams.get("@page_index");
 
         const oldPaginationFrag = popupDocument.getElementById("popup-pagination");
-        let newPaginationFrag;
-        if (prevPageURL || nextPageURL) {
-            newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, pageIndex, props.pageSize, data.collection.length);
-        } else {
-            newPaginationFrag = popupDocument.createElement("div");
-            newPaginationFrag.id = "popup-pagination";
-            newPaginationFrag.classList.add("popup-pagination");
-        }
+        let newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, pageIndex, props.pageSize, data.collection.length);
         popupBody.replaceChild(newPaginationFrag, oldPaginationFrag);
 
 
