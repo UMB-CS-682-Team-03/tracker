@@ -2,15 +2,8 @@
     overflow: auto;
 }
 
-#check,
-.tableid {
-    width: 10px;
-}
-
-
 .popup-table {
-    table-layout: fixed;
-    /* compromises quality for speed   */
+    table-layout: auto;
     width: 100%;
     font-size: .9em;
 }
