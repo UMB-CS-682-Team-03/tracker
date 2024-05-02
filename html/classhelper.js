@@ -103,9 +103,6 @@ class ClassHelper extends HTMLElement {
     trackerBaseURL = null;
 
     connectedCallback() {
-        /** @type {URL} */
-        let apiURL;
-
         try {
             this.helpurl = this.findClassHelpLink();
 
@@ -128,15 +125,7 @@ class ClassHelper extends HTMLElement {
             return;
         }
 
-        try {
-            apiURL = ClassHelper.getRestURL(this.trackerBaseURL, this.helpurlProps);
-        } catch (e) {
-            // Failed parsing props -> reset, log and return.
-            this.helpurl.removeEventListener("click", this.preventDefault);
-            this.helpurl.setAttribute("onclick", this.helpurlScript);
-            console.error(e.message);
-            return;
-        }
+        const initialRequestURL = ClassHelper.getRestURL(this.trackerBaseURL, this.helpurlProps);
 
         ClassHelper.fetchTranslations().catch(error => {
             // Top level handling for translation errors.
@@ -157,7 +146,7 @@ class ClassHelper extends HTMLElement {
         }
 
         const handleClickEvent = (event) => {
-            this.openPopUp(apiURL, this.helpurlProps).catch(error => {
+            this.openPopUp(initialRequestURL, this.helpurlProps).catch(error => {
                 // Top level error handling for openPopUp method.
                 cleanUpClosure();
             });
@@ -404,7 +393,6 @@ class ClassHelper extends HTMLElement {
      * we pass helpurl which is parsed from anchor tag and return a URL.
      * @param {HelpUrlProps} props
      * @returns {URL}
-     * @throws {Error}
      */
     static getRestURL(trackerBaseURL, props) {
         const restDataPath = "rest/data";
