@@ -536,7 +536,7 @@ class ClassHelper extends HTMLElement {
         return fragment;
     }
 
-    getPaginationFragment(prevUrl, nextUrl, index, size) {
+    getPaginationFragment(prevUrl, nextUrl, index, size, total) {
         const fragment = document.createDocumentFragment();
 
         const container = document.createElement("div");
@@ -544,7 +544,16 @@ class ClassHelper extends HTMLElement {
         container.classList.add("popup-pagination");
 
         const info = document.createElement('span');
-        info.textContent = `${1 + (parseInt(index) - 1) * parseInt(size)}..${parseInt(index) * parseInt(size)}`;
+
+        const startNumber = (parseInt(index) - 1) * parseInt(size) + 1;
+        let endNumber;
+        if (total < size) {
+            endNumber = startNumber + total - 1;
+        } else {
+            endNumber = parseInt(index) * parseInt(size);
+        }
+
+        info.textContent = `${startNumber} - ${endNumber}`;
 
         const prev = document.createElement("button");
         prev.innerHTML = ClassHelper.translations["Prev"];
@@ -788,7 +797,7 @@ class ClassHelper extends HTMLElement {
             popupBody.appendChild(searchFrag);
         }
 
-        const paginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize);
+        const paginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize, data.collection.length);
         popupBody.appendChild(paginationFrag);
 
         const tableFrag = this.getTableFragment(props.fields, data.collection, preSelectedValues);
@@ -900,7 +909,7 @@ class ClassHelper extends HTMLElement {
         const pageIndex = selfPageURL.searchParams.get("@page_index");
 
         const oldPaginationFrag = popupDocument.getElementById("popup-pagination");
-        const newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, pageIndex, props.pageSize);
+        const newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, pageIndex, props.pageSize, data.collection.length);
         popupBody.replaceChild(newPaginationFrag, oldPaginationFrag);
 
         let oldTableFrag = popupDocument.getElementById("popup-tablediv");
@@ -964,7 +973,7 @@ class ClassHelper extends HTMLElement {
         const oldPaginationFrag = popupDocument.getElementById("popup-pagination");
         let newPaginationFrag;
         if (prevPageURL || nextPageURL) {
-            newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, pageIndex, props.pageSize);
+            newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, pageIndex, props.pageSize, data.collection.length);
         } else {
             newPaginationFrag = popupDocument.createElement("div");
             newPaginationFrag.id = "popup-pagination";
