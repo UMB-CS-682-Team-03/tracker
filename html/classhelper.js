@@ -2,10 +2,6 @@
  * Properties for the ClassHelper component, 
  * made into a type for better readability.
  * @typedef {Object} HelpUrlProps
- * The qualified domain name with protocol and port(if any)
- * @property {string} origin
- * The tracker name from the url
- * @property {string} tracker
  * Type of data that needs to be shown (eg. issue, user, keywords) parsed from helpurl
  * @property {string} apiClassName
  * @property {number} width // width of the popup window
@@ -86,8 +82,7 @@ class ClassHelper extends HTMLElement {
      * Stores the result from api calls made to rest api,
      * for the parameters in searchWith attribute of this web component
      * where a parameter is defined as a dropdown in 
-     * @type {Object.<string, Object.<string, string>>} 
-     * */
+     * @type {Object.<string, Object.<string, string>>} */
     dropdowns = null;
 
     /** @type {HTMLAnchorElement} */
@@ -99,6 +94,13 @@ class ClassHelper extends HTMLElement {
 
     /** no-op function */
     preventDefault = e => e.preventDefault();
+
+    /** 
+     * The qualified domain name with protocol and port(if any)
+     * with the tracker name if any.
+     * eg. http://localhost:8080/demo or https://demo.roundup-tracker.org
+     * @type {string} */
+    trackerBaseURL = null;
 
     connectedCallback() {
         /** @type {URL} */
@@ -112,7 +114,10 @@ class ClassHelper extends HTMLElement {
             this.helpurl.setAttribute("onclick", "");
             this.helpurl.addEventListener("click", this.preventDefault);
 
-            this.helpurlProps = ClassHelper.parseHelpUrlData(this.helpurl);
+            this.helpurlProps = ClassHelper.parseHelpUrlProps(this.helpurl);
+
+            this.trackerBaseURL = window.location.href.substring(0, window.location.href.lastIndexOf("/"));
+
         } catch (err) {
             console.warn("Classhelper not intercepting helpurl.");
             if (this.helpurl != null) {
@@ -124,8 +129,7 @@ class ClassHelper extends HTMLElement {
         }
 
         try {
-            this.helpurlProps = ClassHelper.parseHelpUrlData(this.helpurl);
-            apiURL = ClassHelper.getRestURL(this.helpurlProps);
+            apiURL = ClassHelper.getRestURL(this.trackerBaseURL, this.helpurlProps);
         } catch (e) {
             // Failed parsing props -> reset, log and return.
             this.helpurl.removeEventListener("click", this.preventDefault);
@@ -182,7 +186,7 @@ class ClassHelper extends HTMLElement {
 
         const handleSearchEvent = (event) => {
             this.helpurlProps.pageIndex = 1;
-            const searchURL = ClassHelper.getSearchURL(this.helpurlProps, event.detail.value);
+            const searchURL = ClassHelper.getSearchURL(this.trackerBaseURL, this.helpurlProps, event.detail.value);
             this.searchEvent(searchURL, this.helpurlProps).catch(error => {
                 // Top level error handling for searchEvent method.
                 this.removeEventListener("search", handleSearchEvent);
@@ -275,7 +279,7 @@ class ClassHelper extends HTMLElement {
                 const splitResult = param.split("[]");
                 param = splitResult[0];
                 const sortOrder = splitResult[1];
-                let url = `${props.origin}/${props.tracker}/rest/data/${param}?@fields=id,name`;
+                let url = `${this.trackerBaseURL}/rest/data/${param}?@fields=id,name`;
                 if (sortOrder) {
                     url += `&@sort=${sortOrder}`;
                 }
@@ -342,7 +346,7 @@ class ClassHelper extends HTMLElement {
      * @param {HTMLAnchorElement} link
      * @returns {HelpUrlProps}
      */
-    static parseHelpUrlData(link) {
+    static parseHelpUrlProps(link) {
         const width = parseInt(link.dataset.width);
         if (isNaN(width)) {
             throw new Error("width in helpurl must be a number");
@@ -381,12 +385,6 @@ class ClassHelper extends HTMLElement {
         const sort = searchParams.get("@sort")?.split(",");
         const fields = searchParams.get("properties")?.split(",");
 
-        const origin = window.location.origin;
-        const tracker = window.location.pathname.split('/')[1];
-        if (!tracker) {
-            throw new Error("error parsing tracker name from window url");
-        }
-
         return {
             width,
             height,
@@ -397,9 +395,7 @@ class ClassHelper extends HTMLElement {
             pageIndex,
             pageSize,
             sort,
-            fields,
-            origin,
-            tracker
+            fields
         }
     }
 
@@ -410,9 +406,9 @@ class ClassHelper extends HTMLElement {
      * @returns {URL}
      * @throws {Error}
      */
-    static getRestURL(props) {
+    static getRestURL(trackerBaseURL, props) {
         const restDataPath = "rest/data";
-        const base = props.origin + "/" + props.tracker + "/" + restDataPath + "/" + props.apiClassName;
+        const base = trackerBaseURL + "/" + restDataPath + "/" + props.apiClassName;
         let url = new URL(base);
 
         url.searchParams.append("@page_index", props.pageIndex);
@@ -428,8 +424,8 @@ class ClassHelper extends HTMLElement {
         return url;
     }
 
-    static getSearchURL(props, formData) {
-        const url = new URL(ClassHelper.getRestURL(props).toString());
+    static getSearchURL(trackerBaseURL, props, formData) {
+        const url = new URL(ClassHelper.getRestURL(trackerBaseURL, props).toString());
         for (let entry of formData.entries()) {
             if (entry[1] != null && entry[1] != "") {
                 url.searchParams.append(entry[0], entry[1]);
@@ -811,7 +807,7 @@ class ClassHelper extends HTMLElement {
         const css = popupDocument.createElement("link");
         css.rel = "stylesheet";
         css.type = "text/css";
-        css.href = props.origin + '/' + props.tracker + '/' + CSS_FILE_NAME;
+        css.href = this.trackerBaseURL + '/' + CSS_FILE_NAME;
         popupHead.appendChild(css);
 
         popupBody.classList.add("flex-container");
