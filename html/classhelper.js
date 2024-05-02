@@ -90,35 +90,42 @@ class ClassHelper extends HTMLElement {
      * */
     dropdowns = null;
 
+    /** @type {HTMLAnchorElement} */
+    helpurl = null;
+    helpurlScript = null;
+
+    /** @type {ClassHelperProps} */
+    properties = null;
+
+    /** no-op function */
+    preventDefault = e => e.preventDefault();
+
     connectedCallback() {
-        /** @type {HTMLAnchorElement} */
-        let link;
-
-        /** @type {ClassHelperProps} */
-        let properties;
-
         /** @type {URL} */
         let apiURL;
 
         try {
-            link = this.findClassHelpLink();
-        } catch (e) {
-            console.error(e.message);
+            this.helpurl = this.findClassHelpLink();
+            this.helpurlScript = this.helpurl.getAttribute("onclick");
+            this.helpurl.setAttribute("onclick", "");
+            this.helpurl.addEventListener("click", this.preventDefault);
+        } catch (err) {
+            console.warn("Classhelper not intercepting helpurl.");
+            if (this.helpurl != null) {
+                this.helpurl.removeEventListener("click", this.preventDefault);
+                this.helpurl.setAttribute("onclick", this.helpurlScript);
+            }
+            console.error(err);
             return;
         }
 
-        let script = link.getAttribute("onclick");
-        link.setAttribute("onclick", "");
-        const preventDefault = e => e.preventDefault();
-        link.addEventListener("click", preventDefault);
-
         try {
-            properties = ClassHelper.parseHelpUrlData(link);
-            apiURL = ClassHelper.getRestURL(properties);
+            this.properties = ClassHelper.parseHelpUrlData(this.helpurl);
+            apiURL = ClassHelper.getRestURL(this.properties);
         } catch (e) {
             // Failed parsing props -> reset, log and return.
-            link.removeEventListener("click", preventDefault);
-            link.setAttribute("onclick", script);
+            this.helpurl.removeEventListener("click", this.preventDefault);
+            this.helpurl.setAttribute("onclick", this.helpurlScript);
             console.error(e.message);
             return;
         }
@@ -130,26 +137,26 @@ class ClassHelper extends HTMLElement {
             console.error(error.message);
         });
 
-        this.fetchDropdowns(properties).catch(error => {
+        this.fetchDropdowns(this.properties).catch(error => {
             // Top level handling for dropdowns errors.
             console.error(error.message);
         });
 
         const cleanUpClosure = () => {
             this.removeEventListener("click", handleClickEvent);
-            link.removeEventListener("click", preventDefault);
-            link.setAttribute("onclick", script);
+            this.helpurl.removeEventListener("click", this.preventDefault);
+            this.helpurl.setAttribute("onclick", this.helpurlScript);
         }
 
         const handleClickEvent = (event) => {
-            this.openPopUp(apiURL, properties).catch(error => {
+            this.openPopUp(apiURL, this.properties).catch(error => {
                 // Top level error handling for openPopUp method.
                 cleanUpClosure();
             });
         };
 
         const handleNextPageEvent = (event) => {
-            this.pageChange(event.detail.value, properties).catch(error => {
+            this.pageChange(event.detail.value, this.properties).catch(error => {
                 // Top level error handling for nextPage method.
                 this.removeEventListener("nextPage", handleNextPageEvent);
                 cleanUpClosure();
@@ -157,7 +164,7 @@ class ClassHelper extends HTMLElement {
         }
 
         const handlePrevPageEvent = (event) => {
-            this.pageChange(event.detail.value, properties).catch(error => {
+            this.pageChange(event.detail.value, this.properties).catch(error => {
                 // Top level error handling for prevPage method.
                 this.removeEventListener("prevPage", handlePrevPageEvent);
                 cleanUpClosure();
@@ -166,13 +173,13 @@ class ClassHelper extends HTMLElement {
 
         const handleValueSelectedEvent = (event) => {
             // does not throw error
-            this.valueSelected(properties, event.detail.value);
+            this.valueSelected(this.properties, event.detail.value);
         }
 
         const handleSearchEvent = (event) => {
-            properties.pageIndex = 1;
-            const searchURL = ClassHelper.getSearchURL(properties, event.detail.value);
-            this.searchEvent(searchURL, properties).catch(error => {
+            this.properties.pageIndex = 1;
+            const searchURL = ClassHelper.getSearchURL(this.properties, event.detail.value);
+            this.searchEvent(searchURL, this.properties).catch(error => {
                 // Top level error handling for searchEvent method.
                 this.removeEventListener("search", handleSearchEvent);
                 cleanUpClosure();
@@ -298,21 +305,15 @@ class ClassHelper extends HTMLElement {
     /**
      * Find the anchor tag that provides the classhelp link.
      * @returns {HTMLAnchorElement}
+     * @throws {Error} when there are no links or more than one link
      */
     findClassHelpLink() {
         const links = this.querySelectorAll("a");
         if (links.length != 1) {
             throw new Error("roundup-classhelper must wrap a single classhelp link");
         }
-        return links.item(0);
-    }
+        const link = links.item(0);
 
-    /**
-     * This method parses the helpurl link to get the necessary data for the classhelper.
-     * @param {HTMLAnchorElement} link
-     * @returns {ClassHelperProps}
-     */
-    static parseHelpUrlData(link) {
         if (!link.dataset.helpurl) {
             throw new Error("roundup-classhelper link must have a data-helpurl attribute");
         }
@@ -325,6 +326,19 @@ class ClassHelper extends HTMLElement {
             throw new Error("roundup-classhelper link must have a data-height attribute");
         }
 
+        if (!link.getAttribute("onclick")) {
+            throw new Error("roundup-classhelper link should have an onclick attribute set");
+        }
+
+        return link;
+    }
+
+    /**
+     * This method parses the helpurl link to get the necessary data for the classhelper.
+     * @param {HTMLAnchorElement} link
+     * @returns {ClassHelperProps}
+     */
+    static parseHelpUrlData(link) {
         const width = parseInt(link.dataset.width);
         if (isNaN(width)) {
             throw new Error("width in helpurl must be a number");
