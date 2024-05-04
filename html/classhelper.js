@@ -1,24 +1,20 @@
 /**
  * Properties for the ClassHelper component, 
  * made into a type for better readability.
- * @typedef {Object} ClassHelperProps
- * The qualified domain name with protocol and port(if any)
- * @property {string} origin
- * The tracker name from the url
- * @property {string} tracker
+ * @typedef {Object} HelpUrlProps
  * Type of data that needs to be shown (eg. issue, user, keywords) parsed from helpurl
  * @property {string} apiClassName
  * @property {number} width // width of the popup window
  * @property {number} height // height of the popup window
  * The form on which the classhelper is being used
- * @property {string} formName
+ * @property {string | null} formName
  * The form property on which the classhelper is being used
- * @property {string} formProperty
- * @property {string} tableSelectionType // it has to be "checkbox" or "radio"(if any)
+ * @property {string | null} formProperty
+ * @property {string | null} tableSelectionType // it has to be "checkbox" or "radio"(if any)
  * The fields on which the table is sorted
- * @property {string[]} sort
+ * @property {string[] | undefined} sort
  * The actual fields to be displayed in the table
- * @property {string[]} fields
+ * @property {string[] | undefined} fields
  * @property {number} pageIndex
  * @property {number} pageSize
  */
@@ -27,6 +23,10 @@
 const CSS_FILE_NAME = "@@file/classhelper.css";
 
 const CLASSHELPER_TAG_NAME = "roundup-classhelper";
+
+const ALTERNATIVE_DROPDOWN_PATHNAMES = {
+    "roles": "/rest/roles"
+}
 
 /**
  * This is a custom web component(user named html tag) that wraps a helpurl link 
@@ -86,97 +86,135 @@ class ClassHelper extends HTMLElement {
      * Stores the result from api calls made to rest api,
      * for the parameters in searchWith attribute of this web component
      * where a parameter is defined as a dropdown in 
-     * @type {Object.<string, Object.<string, string>>} 
-     * */
+     * @type {Object.<string, Map.<string, string>>} */
     dropdowns = null;
 
+    /** @type {HTMLAnchorElement} */
+    helpurl = null;
+    helpurlScript = null;
+
+    /** @type {HelpUrlProps} */
+    helpurlProps = null;
+
+    /** no-op function */
+    preventDefault = e => e.preventDefault();
+
+    /** 
+     * The qualified domain name with protocol and port(if any)
+     * with the tracker name if any.
+     * eg. http://localhost:8080/demo or https://demo.roundup-tracker.org
+     * @type {string} */
+    trackerBaseURL = null;
+
     connectedCallback() {
-        /** @type {HTMLAnchorElement} */
-        let link;
-
-        /** @type {ClassHelperProps} */
-        let properties;
-
-        /** @type {URL} */
-        let apiURL;
-
         try {
-            link = this.findClassHelpLink();
-        } catch (e) {
-            console.error(e.message);
+            this.helpurl = this.findClassHelpLink();
+
+            // Removing the helpurl click behavior
+            this.helpurlScript = this.helpurl.getAttribute("onclick");
+            this.helpurl.setAttribute("onclick", "");
+            this.helpurl.addEventListener("click", this.preventDefault);
+
+            this.helpurlProps = ClassHelper.parseHelpUrlProps(this.helpurl);
+
+            this.trackerBaseURL = window.location.href.substring(0, window.location.href.lastIndexOf("/"));
+
+        } catch (err) {
+            console.warn("Classhelper not intercepting helpurl.");
+            if (this.helpurl != null) {
+                this.helpurl.removeEventListener("click", this.preventDefault);
+                this.helpurl.setAttribute("onclick", this.helpurlScript);
+            }
+            console.error(err);
             return;
         }
 
-        let script = link.getAttribute("onclick");
-        link.setAttribute("onclick", "");
-        const preventDefault = e => e.preventDefault();
-        link.addEventListener("click", preventDefault);
+        const initialRequestURL = ClassHelper.getRestURL(this.trackerBaseURL, this.helpurlProps);
 
-        try {
-            properties = ClassHelper.parseHelpUrlData(link);
-            apiURL = ClassHelper.getRestURL(properties);
-        } catch (e) {
-            // Failed parsing props -> reset, log and return.
-            link.removeEventListener("click", preventDefault);
-            link.setAttribute("onclick", script);
-            console.error(e.message);
-            return;
-        }
+        ClassHelper.fetchTranslations()
+            .catch(error => {
+                console.warn("Classhelper failed in translating.")
+                console.error(error);
+            });
 
-        ClassHelper.fetchTranslations().catch(error => {
-            // Top level handling for translation errors.
-            // Fallbacks to use english keywords.
-            /** @todo think about the showing it to user */
-            console.error(error.message);
-        });
-
-        this.fetchDropdowns(properties).catch(error => {
-            // Top level handling for dropdowns errors.
-            console.error(error.message);
-        });
+        this.fetchDropdowns()
+            .catch(error => {
+                // Top level handling for dropdowns errors.
+                console.error(error);
+            });
 
         const cleanUpClosure = () => {
+            console.warn("Classhelper not intercepting helpurl.");
             this.removeEventListener("click", handleClickEvent);
-            link.removeEventListener("click", preventDefault);
-            link.setAttribute("onclick", script);
+            this.helpurl.removeEventListener("click", this.preventDefault);
+            this.helpurl.setAttribute("onclick", this.helpurlScript);
         }
 
         const handleClickEvent = (event) => {
-            this.openPopUp(apiURL, properties).catch(error => {
-                // Top level error handling for openPopUp method.
-                cleanUpClosure();
-            });
+            if (this.popupRef != null && !this.popupRef.closed) {
+                this.popupRef.focus();
+                return;
+            }
+
+            this.openPopUp(initialRequestURL, this.helpurlProps)
+                .catch(error => {
+                    // Top level error handling for openPopUp method.
+                    cleanUpClosure();
+
+                    if (this.popupRef != null) {
+                        const fragment = this.getErrorFragment("An error occurred while opening the popup window");
+                        this.popupRef.document.body.innerHTML = ""
+                        this.popupRef.document.body.appendChild(fragment);
+                    }
+
+                    console.error(error);
+                });
         };
 
         const handleNextPageEvent = (event) => {
-            this.pageChange(event.detail.value, properties).catch(error => {
-                // Top level error handling for nextPage method.
-                this.removeEventListener("nextPage", handleNextPageEvent);
-                cleanUpClosure();
-            });
+            this.pageChange(event.detail.value, this.helpurlProps)
+                .catch(error => {
+                    // Top level error handling for nextPage method.
+                    cleanUpClosure();
+                    const fragment = this.getErrorFragment("An error occurred while fetching the next page of table");
+                    this.popupRef.document.body.innerHTML = ""
+                    this.popupRef.document.body.appendChild(fragment);
+
+                    console.error(error, `request data url: ${event.detail.value}`);
+                });
         }
 
         const handlePrevPageEvent = (event) => {
-            this.pageChange(event.detail.value, properties).catch(error => {
-                // Top level error handling for prevPage method.
-                this.removeEventListener("prevPage", handlePrevPageEvent);
-                cleanUpClosure();
-            });
+            this.pageChange(event.detail.value, this.helpurlProps)
+                .catch(error => {
+                    // Top level error handling for prevPage method.
+                    cleanUpClosure();
+                    const fragment = this.getErrorFragment("An error occurred while fetching the previous page of table");
+                    this.popupRef.document.body.innerHTML = ""
+                    this.popupRef.document.body.appendChild(fragment);
+
+                    console.error(error, `request data url: ${event.detail.value}`);
+                });
         }
 
         const handleValueSelectedEvent = (event) => {
             // does not throw error
-            this.valueSelected(properties, event.detail.value);
+            this.valueSelected(this.helpurlProps, event.detail.value);
         }
 
         const handleSearchEvent = (event) => {
-            properties.pageIndex = 1;
-            const searchURL = ClassHelper.getSearchURL(properties, event.detail.value);
-            this.searchEvent(searchURL, properties).catch(error => {
-                // Top level error handling for searchEvent method.
-                this.removeEventListener("search", handleSearchEvent);
-                cleanUpClosure();
-            });
+            this.helpurlProps.pageIndex = 1;
+            const searchURL = ClassHelper.getSearchURL(this.trackerBaseURL, this.helpurlProps, event.detail.value);
+            this.searchEvent(searchURL, this.helpurlProps)
+                .catch(error => {
+                    // Top level error handling for searchEvent method.
+                    cleanUpClosure();
+                    const fragment = this.getErrorFragment("An error occurred while fetching the search results");
+                    this.popupRef.document.body.innerHTML = ""
+                    this.popupRef.document.body.appendChild(fragment);
+
+                    console.error(error, `request data url: ${event.detail.value}`);
+                });
         }
 
         const handleSelectionEvent = (event) => {
@@ -232,21 +270,19 @@ class ClassHelper extends HTMLElement {
         let resp;
         try {
             resp = await fetch(url);
-            if (!resp.ok) throw new Error();
+            if (!resp.ok) throw new Error("Not 2xx status code.", { cause: resp });
         } catch (error) {
-            console.error(error);
-            throw new Error("error fetching translations from roundup rest api");
+            throw new Error("error fetching translations from roundup rest api", { cause: error });
         }
 
         try {
             ClassHelper.translations = await resp.json();
         } catch (error) {
-            throw new Error("error parsing translation json from roundup rest api");
+            throw new Error("error parsing translation json from roundup rest api", { cause: error });
         }
     }
 
-    /** @param {ClassHelperProps} props  */
-    async fetchDropdowns(props) {
+    async fetchDropdowns() {
         // Singleton implementation
         if (this.dropdowns != null) {
             return;
@@ -261,10 +297,18 @@ class ClassHelper extends HTMLElement {
 
         for (let param of params) {
             if (param.includes("[]")) {
-                const splitResult = param.split("[]");
-                param = splitResult[0];
-                const sortOrder = splitResult[1];
-                let url = `${props.origin}/${props.tracker}/rest/data/${param}?@fields=id,name`;
+                const segments = param.split("[]");
+                param = segments[0];
+                const sortOrder = segments[1];
+
+                let url = this.trackerBaseURL;
+                if (ALTERNATIVE_DROPDOWN_PATHNAMES[param]) {
+                    url += ALTERNATIVE_DROPDOWN_PATHNAMES[param];
+                } else {
+                    url += `/rest/data/${param}`;
+                }
+                url += "?@verbose=2";
+
                 if (sortOrder) {
                     url += `&@sort=${sortOrder}`;
                 }
@@ -272,10 +316,9 @@ class ClassHelper extends HTMLElement {
                 let resp;
                 try {
                     resp = await fetch(url);
-                    if (!resp.ok) throw new Error();
+                    if (!resp.ok) throw new Error("Not 2xx status code.", { cause: resp });
                 } catch (error) {
-                    console.error(error);
-                    throw new Error("error fetching dropdowns from roundup rest api");
+                    throw new Error("error fetching dropdowns from roundup rest api", { cause: error });
                 }
 
                 let json;
@@ -286,10 +329,20 @@ class ClassHelper extends HTMLElement {
                 }
 
                 let list = new Map();
-                for (let entry of json.data.collection) {
-                    list.set(entry.id, entry.name);
-                }
 
+                if (json.data.collection.length > 0) {
+                    let idKey = "id";
+                    let valueKey = Object.keys(json.data.collection[0]).find(key => key !== "id" && key !== "link");
+
+                    if (!valueKey) {
+                        throw new Error("No value key found in dropdown data for: " + url);
+                    }
+
+                    for (let entry of json.data.collection) {
+                        list.set(entry[idKey], entry[valueKey]);
+                    }
+
+                }
                 this.dropdowns[param] = list;
             }
         }
@@ -298,21 +351,15 @@ class ClassHelper extends HTMLElement {
     /**
      * Find the anchor tag that provides the classhelp link.
      * @returns {HTMLAnchorElement}
+     * @throws {Error} when the anchor tag is not classhelp link
      */
     findClassHelpLink() {
         const links = this.querySelectorAll("a");
         if (links.length != 1) {
             throw new Error("roundup-classhelper must wrap a single classhelp link");
         }
-        return links.item(0);
-    }
+        const link = links.item(0);
 
-    /**
-     * This method parses the helpurl link to get the necessary data for the classhelper.
-     * @param {HTMLAnchorElement} link
-     * @returns {ClassHelperProps}
-     */
-    static parseHelpUrlData(link) {
         if (!link.dataset.helpurl) {
             throw new Error("roundup-classhelper link must have a data-helpurl attribute");
         }
@@ -325,6 +372,20 @@ class ClassHelper extends HTMLElement {
             throw new Error("roundup-classhelper link must have a data-height attribute");
         }
 
+        if (!link.getAttribute("onclick")) {
+            throw new Error("roundup-classhelper link should have an onclick attribute set");
+        }
+
+        return link;
+    }
+
+    /**
+     * This method parses the helpurl link to get the necessary data for the classhelper.
+     * @param {HTMLAnchorElement} link
+     * @returns {HelpUrlProps}
+     * @throws {Error} when the helpurl link is not proper
+     */
+    static parseHelpUrlProps(link) {
         const width = parseInt(link.dataset.width);
         if (isNaN(width)) {
             throw new Error("width in helpurl must be a number");
@@ -338,7 +399,7 @@ class ClassHelper extends HTMLElement {
         const urlParts = link.dataset.helpurl.split("?");
 
         if (urlParts.length != 2) {
-            throw new Error("invalid helpurl from link");
+            throw new Error("invalid helpurl from link, missing query params");
         }
 
         const apiClassName = urlParts[0];
@@ -363,12 +424,6 @@ class ClassHelper extends HTMLElement {
         const sort = searchParams.get("@sort")?.split(",");
         const fields = searchParams.get("properties")?.split(",");
 
-        const origin = window.location.origin;
-        const tracker = window.location.pathname.split('/')[1];
-        if (!tracker) {
-            throw new Error("error parsing tracker name from window url");
-        }
-
         return {
             width,
             height,
@@ -379,22 +434,19 @@ class ClassHelper extends HTMLElement {
             pageIndex,
             pageSize,
             sort,
-            fields,
-            origin,
-            tracker
+            fields
         }
     }
 
     /** 
      * from roundup docs rest api url - "{host}/{tracker}
      * we pass helpurl which is parsed from anchor tag and return a URL.
-     * @param {ClassHelperProps} props
+     * @param {HelpUrlProps} props
      * @returns {URL}
-     * @throws {Error}
      */
-    static getRestURL(props) {
+    static getRestURL(trackerBaseURL, props) {
         const restDataPath = "rest/data";
-        const base = props.origin + "/" + props.tracker + "/" + restDataPath + "/" + props.apiClassName;
+        const base = trackerBaseURL + "/" + restDataPath + "/" + props.apiClassName;
         let url = new URL(base);
 
         url.searchParams.append("@page_index", props.pageIndex);
@@ -410,8 +462,8 @@ class ClassHelper extends HTMLElement {
         return url;
     }
 
-    static getSearchURL(props, formData) {
-        const url = new URL(ClassHelper.getRestURL(props).toString());
+    static getSearchURL(trackerBaseURL, props, formData) {
+        const url = new URL(ClassHelper.getRestURL(trackerBaseURL, props).toString());
         for (let entry of formData.entries()) {
             if (entry[1] != null && entry[1] != "") {
                 url.searchParams.append(entry[0], entry[1]);
@@ -420,7 +472,33 @@ class ClassHelper extends HTMLElement {
         return url;
     }
 
-    getSearchFragment() {
+    getErrorFragment(message) {
+        const fragment = document.createDocumentFragment();
+        const div = document.createElement("div");
+        div.classList.add("error-div");
+        const h3_1 = document.createElement("h3");
+        h3_1.textContent = message;
+        const h3_2 = document.createElement("h3");
+        h3_2.textContent = "Classhelper will not intercept helpurl link.";
+        const h3_3 = document.createElement("h3");
+        h3_3.textContent = "Using fallback helpurl instead.";
+        const h3_4 = document.createElement("h3");
+        h3_4.textContent = "Please check the console for more details.";
+
+        const button = document.createElement("button");
+        button.textContent = "Close Popup";
+
+        button.addEventListener("click", () => {
+            this.popupRef.close();
+        });
+
+        div.append(h3_1, h3_2, h3_3, h3_4, button);
+        fragment.appendChild(div);
+
+        return fragment;
+    }
+
+    getSearchFragment(formData) {
         const fragment = document.createDocumentFragment();
         const form = document.createElement("form");
         form.setAttribute("id", "popup-search");
@@ -456,11 +534,24 @@ class ClassHelper extends HTMLElement {
                     let option = document.createElement("option");
                     option.value = key;
                     option.textContent = this.dropdowns[param].get(key);
+                    if (formData) {
+                        let value = formData.get(param);
+                        if (value && value == key) {
+                            option.selected = "selected";
+                        }
+                    }
                     input.appendChild(option);
                 }
             } else {
                 input = document.createElement("input");
                 input.setAttribute("type", "text");
+
+                if (formData) {
+                    let value = formData.get(param);
+                    if (value) {
+                        input.value = value;
+                    }
+                }
             }
 
             input.setAttribute("name", param);
@@ -523,7 +614,7 @@ class ClassHelper extends HTMLElement {
         return fragment;
     }
 
-    getPaginationFragment(prevUrl, nextUrl, index, size) {
+    getPaginationFragment(prevUrl, nextUrl, index, size, total) {
         const fragment = document.createDocumentFragment();
 
         const container = document.createElement("div");
@@ -531,7 +622,16 @@ class ClassHelper extends HTMLElement {
         container.classList.add("popup-pagination");
 
         const info = document.createElement('span');
-        info.textContent = `${1 + (parseInt(index) - 1) * parseInt(size)}..${parseInt(index) * parseInt(size)}`;
+
+        const startNumber = (parseInt(index) - 1) * parseInt(size) + 1;
+        let endNumber;
+        if (total < size) {
+            endNumber = startNumber + total - 1;
+        } else {
+            endNumber = parseInt(index) * parseInt(size);
+        }
+
+        info.textContent = `${startNumber} - ${endNumber}`;
 
         const prev = document.createElement("button");
         prev.innerHTML = ClassHelper.translations["Prev"];
@@ -645,7 +745,7 @@ class ClassHelper extends HTMLElement {
         data.forEach((entry) => {
             const row = document.createElement('tr');
             row.dataset.id = entry[headers[0]];
-            row.setAttribute("tabindex", 1);
+            row.setAttribute("tabindex", 0);
 
             const checkbox = document.createElement("input");
             checkbox.setAttribute("type", "checkbox");
@@ -687,34 +787,6 @@ class ClassHelper extends HTMLElement {
             }));
         });
 
-        this.popupRef.document.addEventListener("keydown", (e) => {
-            if (e.target.tagName == "TR") {
-                if (e.key === "ArrowDown") {
-                    if (e.target.nextElementSibling != null) {
-                        e.target.nextElementSibling.focus();
-                    } else {
-                        e.target.parentElement.firstChild.focus();
-                    }
-                }
-                if (e.key === "ArrowUp") {
-                    if (e.target.previousElementSibling != null) {
-                        e.target.previousElementSibling.focus();
-                    } else {
-                        e.target.parentElement.lastChild.focus();
-                    }
-                }
-                if (e.key === "Enter" || e.key === " ") {
-                    let tr = e.target;
-                    tr.children.item(0).checked = !tr.children.item(0).checked;
-                    this.dispatchEvent(new CustomEvent("selection", {
-                        detail: {
-                            value: tr.dataset.id
-                        }
-                    }));
-                }
-            }
-        });
-
         // Create table footer with the same column values as headers
         const footerRow = document.createElement('tr');
         let footThx = document.createElement("th");
@@ -743,15 +815,20 @@ class ClassHelper extends HTMLElement {
     /**
      * main method called when classhelper is clicked
      * @param {URL | string} apiURL
-     * @param {ClassHelperProps} props 
+     * @param {HelpUrlProps} props 
+     * @param {string[]} preSelectedValues
+     * @param {FormData} formData
      * @throws {Error} when fetching or parsing data from roundup rest api fails
      */
-    async openPopUp(apiURL, props) {
-        // Find preselected values
-        const input = document.getElementsByName(props.formProperty).item(0);
-        let preSelectedValues = [];
-        if (input.value) {
-            preSelectedValues = input.value.split(',');
+    async openPopUp(apiURL, props, preSelectedValues, formData) {
+        if (!preSelectedValues) {
+            // Find preselected values
+            const input = document.getElementsByName(props.formProperty).item(0);
+            if (input.value) {
+                preSelectedValues = input.value.split(',');
+            } else {
+                preSelectedValues = [];
+            }
         }
 
         const popupFeatures = `popup=yes,width=${props.width},height=${props.height}`;
@@ -793,17 +870,17 @@ class ClassHelper extends HTMLElement {
         const css = popupDocument.createElement("link");
         css.rel = "stylesheet";
         css.type = "text/css";
-        css.href = props.origin + '/' + props.tracker + '/' + CSS_FILE_NAME;
+        css.href = this.trackerBaseURL + '/' + CSS_FILE_NAME;
         popupHead.appendChild(css);
 
         popupBody.classList.add("flex-container");
 
         if (this.getAttribute("searchWith")) {
-            const searchFrag = this.getSearchFragment();
+            const searchFrag = this.getSearchFragment(formData);
             popupBody.appendChild(searchFrag);
         }
 
-        const paginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize);
+        const paginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize, data.collection.length);
         popupBody.appendChild(paginationFrag);
 
         const tableFrag = this.getTableFragment(props.fields, data.collection, preSelectedValues);
@@ -815,11 +892,61 @@ class ClassHelper extends HTMLElement {
 
         const accumulatorFrag = this.getAccumulatorFragment(preSelectedValues);
         popupBody.appendChild(accumulatorFrag);
+
+        this.popupRef.document.addEventListener("keydown", (e) => {
+            if (e.target.tagName == "TR") {
+                if (e.key === "ArrowDown") {
+                    if (e.target.nextElementSibling != null) {
+                        e.target.nextElementSibling.focus();
+                    } else {
+                        e.target.parentElement.firstChild.focus();
+                    }
+                }
+                if (e.key === "ArrowUp") {
+                    if (e.target.previousElementSibling != null) {
+                        e.target.previousElementSibling.focus();
+                    } else {
+                        e.target.parentElement.lastChild.focus();
+                    }
+                }
+                if (e.key === "Enter" || e.key === " ") {
+                    let tr = e.target;
+                    tr.children.item(0).checked = !tr.children.item(0).checked;
+                    this.dispatchEvent(new CustomEvent("selection", {
+                        detail: {
+                            value: tr.dataset.id
+                        }
+                    }));
+                }
+                if (e.key === "ArrowRight") {
+                    this.popupRef.document.getElementById("popup-pagination").lastChild.focus();
+                }
+                if (e.key === "ArrowLeft") {
+                    this.popupRef.document.getElementById("popup-pagination").firstChild.focus();
+                }
+                return;
+            }
+
+            if (e.target.tagName != "INPUT" && e.target.tagName != "SELECT") {
+                if (e.key === "ArrowDown") {
+                    this.popupRef.document.querySelector("tr.rowstyle").parentElement.firstChild.focus();
+                }
+                if (e.key === "ArrowUp") {
+                    this.popupRef.document.querySelector("tr.rowstyle").parentElement.lastChild.focus();
+                }
+                if (e.key === "ArrowRight") {
+                    this.popupRef.document.getElementById("popup-pagination").lastChild.focus();
+                }
+                if (e.key === "ArrowLeft") {
+                    this.popupRef.document.getElementById("popup-pagination").firstChild.focus();
+                }
+            }
+        });
     }
 
     /** method when next or previous button is clicked
      * @param {URL | string} apiURL
-     * @param {ClassHelperProps} props
+     * @param {HelpUrlProps} props
      * @throws {Error} when fetching or parsing data from roundup rest api fails
      */
     async pageChange(apiURL, props) {
@@ -858,10 +985,10 @@ class ClassHelper extends HTMLElement {
 
         const popupDocument = this.popupRef.document;
         const popupBody = this.popupRef.document.body;
-        props.pageIndex = selfPageURL.searchParams.get("@page_index");
+        const pageIndex = selfPageURL.searchParams.get("@page_index");
 
         const oldPaginationFrag = popupDocument.getElementById("popup-pagination");
-        const newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize);
+        const newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, pageIndex, props.pageSize, data.collection.length);
         popupBody.replaceChild(newPaginationFrag, oldPaginationFrag);
 
         let oldTableFrag = popupDocument.getElementById("popup-tablediv");
@@ -870,7 +997,7 @@ class ClassHelper extends HTMLElement {
     }
 
     /** method when a value is selected in 
-     * @param {ClassHelperProps} props
+     * @param {HelpUrlProps} props
      * @param {string} value
      */
     valueSelected(props, value) {
@@ -881,7 +1008,7 @@ class ClassHelper extends HTMLElement {
 
     /** method when search is performed within classhelper, here we need to update the classhelper table with search results
      * @param {URL | string} apiURL
-     * @param {ClassHelperProps} props
+     * @param {HelpUrlProps} props
      * @throws {Error} when fetching or parsing data from roundup rest api fails
      */
     async searchEvent(apiURL, props) {
@@ -920,17 +1047,10 @@ class ClassHelper extends HTMLElement {
 
         const popupDocument = this.popupRef.document;
         const popupBody = this.popupRef.document.body;
-        props.pageIndex = selfPageURL.searchParams.get("@page_index");
+        const pageIndex = selfPageURL.searchParams.get("@page_index");
 
         const oldPaginationFrag = popupDocument.getElementById("popup-pagination");
-        let newPaginationFrag;
-        if (prevPageURL || nextPageURL) {
-            newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize);
-        } else {
-            newPaginationFrag = popupDocument.createElement("div");
-            newPaginationFrag.id = "popup-pagination";
-            newPaginationFrag.classList.add("popup-pagination");
-        }
+        let newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, pageIndex, props.pageSize, data.collection.length);
         popupBody.replaceChild(newPaginationFrag, oldPaginationFrag);
 
 
