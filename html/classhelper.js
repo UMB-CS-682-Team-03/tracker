@@ -163,14 +163,12 @@ class ClassHelper extends HTMLElement {
                 .catch(error => {
                     // Top level error handling for openPopUp method.
                     cleanUpClosure();
-
-                    if (this.popupRef != null) {
-                        const fragment = this.getErrorFragment("An error occurred while opening the popup window");
-                        this.popupRef.document.body.innerHTML = ""
-                        this.popupRef.document.body.appendChild(fragment);
-                    }
-
                     console.error(error);
+                    if (this.popupRef != null) {
+                        this.popupRef.close();
+                    }
+                    window.alert("Error: Failed to open classhelper, check console for more details.");
+                    this.helpurl.click();
                 });
         };
 
@@ -179,11 +177,12 @@ class ClassHelper extends HTMLElement {
                 .catch(error => {
                     // Top level error handling for nextPage method.
                     cleanUpClosure();
-                    const fragment = this.getErrorFragment("An error occurred while fetching the next page of table");
-                    this.popupRef.document.body.innerHTML = ""
-                    this.popupRef.document.body.appendChild(fragment);
-
                     console.error(error, `request data url: ${event.detail.value}`);
+                    if (this.popupRef != null) {
+                        this.popupRef.close();
+                    }
+                    window.alert("Error: Failed to load next page, check console for more details.");
+                    this.helpurl.click();
                 });
         }
 
@@ -192,11 +191,12 @@ class ClassHelper extends HTMLElement {
                 .catch(error => {
                     // Top level error handling for prevPage method.
                     cleanUpClosure();
-                    const fragment = this.getErrorFragment("An error occurred while fetching the previous page of table");
-                    this.popupRef.document.body.innerHTML = ""
-                    this.popupRef.document.body.appendChild(fragment);
-
                     console.error(error, `request data url: ${event.detail.value}`);
+                    if (this.popupRef != null) {
+                        this.popupRef.close();
+                    }
+                    window.alert("Error: Failed to load next page, check console for more details.");
+                    this.helpurl.click();
                 });
         }
 
@@ -212,11 +212,12 @@ class ClassHelper extends HTMLElement {
                 .catch(error => {
                     // Top level error handling for searchEvent method.
                     cleanUpClosure();
-                    const fragment = this.getErrorFragment("An error occurred while fetching the search results");
-                    this.popupRef.document.body.innerHTML = ""
-                    this.popupRef.document.body.appendChild(fragment);
-
                     console.error(error, `request data url: ${event.detail.value}`);
+                    if (this.popupRef != null) {
+                        this.popupRef.close();
+                    }
+                    window.alert("Error: Failed to load next page, check console for more details.");
+                    this.helpurl.click();
                 });
         }
 
@@ -473,32 +474,6 @@ class ClassHelper extends HTMLElement {
             }
         }
         return url;
-    }
-
-    getErrorFragment(message) {
-        const fragment = document.createDocumentFragment();
-        const div = document.createElement("div");
-        div.classList.add("error-div");
-        const h3_1 = document.createElement("h3");
-        h3_1.textContent = message;
-        const h3_2 = document.createElement("h3");
-        h3_2.textContent = "Classhelper will not intercept helpurl link.";
-        const h3_3 = document.createElement("h3");
-        h3_3.textContent = "Using fallback helpurl instead.";
-        const h3_4 = document.createElement("h3");
-        h3_4.textContent = "Please check the console for more details.";
-
-        const button = document.createElement("button");
-        button.textContent = "Close Popup";
-
-        button.addEventListener("click", () => {
-            this.popupRef.close();
-        });
-
-        div.append(h3_1, h3_2, h3_3, h3_4, button);
-        fragment.appendChild(div);
-
-        return fragment;
     }
 
     getSearchFragment(formData) {
@@ -783,6 +758,7 @@ class ClassHelper extends HTMLElement {
                 tr.children.item(0).checked = !tr.children.item(0).checked;
             }
 
+            this.popupRef.document.activeElement.blur();
             this.dispatchEvent(new CustomEvent("selection", {
                 detail: {
                     value: id
