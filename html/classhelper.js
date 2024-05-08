@@ -23,6 +23,7 @@
 const CSS_FILE_NAME = "@@file/classhelper.css";
 
 const CLASSHELPER_TAG_NAME = "roundup-classhelper";
+const CLASSHELPER_ATTRIBUTE_SEARCH_WITH = "data-search-with";
 
 const ALTERNATIVE_DROPDOWN_PATHNAMES = {
     "roles": "/rest/roles"
@@ -75,7 +76,7 @@ const ALTERNATIVE_DROPDOWN_PATHNAMES = {
  */
 class ClassHelper extends HTMLElement {
 
-    static observedAttributes = ["data-search-with"]
+    static observedAttributes = [CLASSHELPER_ATTRIBUTE_SEARCH_WITH]
 
     /** @type {Window} handler to popup window */
     popupRef = null;
@@ -235,7 +236,7 @@ class ClassHelper extends HTMLElement {
     }
 
     attributeChangedCallback(name, oldValue, _newValue) {
-        if (name === "data-search-with") {
+        if (name === CLASSHELPER_ATTRIBUTE_SEARCH_WITH) {
             if (!oldValue || oldValue === _newValue) {
                 return;
             }
@@ -758,7 +759,6 @@ class ClassHelper extends HTMLElement {
                 tr.children.item(0).checked = !tr.children.item(0).checked;
             }
 
-            this.popupRef.document.activeElement.blur();
             this.dispatchEvent(new CustomEvent("selection", {
                 detail: {
                     value: id
@@ -874,14 +874,16 @@ class ClassHelper extends HTMLElement {
 
         this.popupRef.document.addEventListener("keydown", (e) => {
             if (e.target.tagName == "TR") {
-                if (e.key === "ArrowDown") {
+                if (e.key === "ArrowDown" && e.target === this.popupRef.document.activeElement) {
+                    e.preventDefault();
                     if (e.target.nextElementSibling != null) {
                         e.target.nextElementSibling.focus();
                     } else {
                         e.target.parentElement.firstChild.focus();
                     }
                 }
-                if (e.key === "ArrowUp") {
+                if (e.key === "ArrowUp" && e.target === this.popupRef.document.activeElement) {
+                    e.preventDefault();
                     if (e.target.previousElementSibling != null) {
                         e.target.previousElementSibling.focus();
                     } else {
@@ -889,6 +891,7 @@ class ClassHelper extends HTMLElement {
                     }
                 }
                 if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
                     let tr = e.target;
                     tr.children.item(0).checked = !tr.children.item(0).checked;
                     this.dispatchEvent(new CustomEvent("selection", {
@@ -897,10 +900,10 @@ class ClassHelper extends HTMLElement {
                         }
                     }));
                 }
-                if (e.key === "ArrowRight") {
+                if (e.key === ">") {
                     this.popupRef.document.getElementById("popup-pagination").lastChild.focus();
                 }
-                if (e.key === "ArrowLeft") {
+                if (e.key === "<") {
                     this.popupRef.document.getElementById("popup-pagination").firstChild.focus();
                 }
                 return;
@@ -908,15 +911,17 @@ class ClassHelper extends HTMLElement {
 
             if (e.target.tagName != "INPUT" && e.target.tagName != "SELECT") {
                 if (e.key === "ArrowDown") {
+                    e.preventDefault();
                     this.popupRef.document.querySelector("tr.rowstyle").parentElement.firstChild.focus();
                 }
                 if (e.key === "ArrowUp") {
+                    e.preventDefault();
                     this.popupRef.document.querySelector("tr.rowstyle").parentElement.lastChild.focus();
                 }
-                if (e.key === "ArrowRight") {
+                if (e.key === ">") {
                     this.popupRef.document.getElementById("popup-pagination").lastChild.focus();
                 }
-                if (e.key === "ArrowLeft") {
+                if (e.key === "<") {
                     this.popupRef.document.getElementById("popup-pagination").firstChild.focus();
                 }
             }
