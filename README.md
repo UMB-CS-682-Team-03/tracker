@@ -30,14 +30,14 @@ rm -rf ./tracker
 There are three main parts of the roundup-classhelper component:
 
 * **Search Section (optional)**: This section allows users to search for items based on specified fields. For example, users can search for issues by title, status, or keywords. The search section is optional and may not be present in some configurations.
-   <img src="/roundup/demo/doc-assets/image-1.png" alt="Image Title" width="60%">
+   <img src="./doc-assets/image-1.png" alt="Image Title" width="60%">
 
 * **Select/Info Table Section**: This section displays the search results or a list of available items. If a search section is present, it will show the items matching the search criteria. If no search section is available, it will display all available items. This section may include pagination controls to navigate through large datasets. Additionally, it may have a checkbox for selecting items if the `<roundup-classhelper>` is associated with a form field. However, if there is no associated form field (i.e., "info mode"), this section will act as an information box without selection capabilities.
 
-   <img src="/roundup/demo/doc-assets/image-3.png" alt="Image Title" width="60%">
+   <img src="./doc-assets/image-3.png" alt="Image Title" width="60%">
 
 * **Accumulator/Submit Section**: This section shows the items selected by the user from the Select/Info Table Section. It serves as an accumulator, allowing users to review and confirm their selections before submitting or updating the associated form field. If the `<roundup-classhelper>` is in "info mode" (without an associated form field), this section may be absent, as there are no items to accumulate or submit.
-   <img src="/roundup/demo/doc-assets/image-4.png" alt="Image Title" width="60%">
+   <img src="./doc-assets/image-4.png" alt="Image Title" width="60%">
 
 The presence and behavior of these sections can vary depending on the configuration and intended use case of the `<roundup-classhelper>` component. For example, in some scenarios, the Search Section may not be necessary.
 
@@ -136,7 +136,7 @@ In addition to keyboard navigation, the `<roundup-classhelper>` component can be
    #### Fallback Mechanism
    If the user's browser doesn't support web components, the `<roundup-classhelper>` will automatically fall back to the existing ClassHelper link.
 
-   <img src="/roundup/demo/doc-assets/image-5.png" alt="Image Title" width="40%">
+   <img src="./doc-assets/image-5.png" alt="Image Title" width="40%">
 
    #### Error Handling
    * In case of errors, the component will display relevant messages to the user.(component will notify the user)
