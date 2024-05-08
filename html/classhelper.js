@@ -42,23 +42,23 @@ const ALTERNATIVE_DROPDOWN_PATHNAMES = {
  * ------------
  * The helpurl must be wrapped under this web component(user named html tag).
  * ```html
- * <roundup-classhelper searchWith="title,status[],keyword[]+name">
+ * <roundup-classhelper data-search-with="title,status[],keyword[]+name">
  *   ( helpurl template here, this can be tal, chameleon, jinja2.
  *     In HTML DOM this is an helpurl anchor tag.
  *    )
  * </roundup-classhelper>
  * ```
  * 
- * The searchWith attribute of the web component is optional.
+ * The data-search-with attribute of the web component is optional.
  * 
- * searchWith attribute value is a list of comma separated names of table data fields.
+ * data-search-with attribute value is a list of comma separated names of table data fields.
  * (It is possible that a data field is present in search form but absent in the table).
  * 
  * A square parentheses open+close ("[]") can be added to the column name eg."status[]",
  * this will make that search field as a dropdown in the search form in popup window, 
  * then a user can see all the possible values that column can have.
  * 
- * eg. searchWith="title,status[],keyword[]+name" where status can have values like "open", 
+ * eg. data-search-with="title,status[],keyword[]+name" where status can have values like "open", 
  * "closed" a dropdown will be shown with null, open and closed. This is an aesthetic usage 
  * instead of writing in a text field for options in status.
  * 
@@ -66,7 +66,7 @@ const ALTERNATIVE_DROPDOWN_PATHNAMES = {
  * In the above example, keyword[]+name will sort the dropdown in ascending order(a-z) of name of the keyword.
  * A value keyword[]-name will sort the dropdown in descending order(z-a) of name of the keyword.
  * 
- * searchWith="<<column name>>[]{+|-}{id|name}"
+ * data-search-with="<<column name>>[]{+|-}{id|name}"
  * Here column name is required,
  * optionally there can be [] for a dropdown,
  * optionally with "[]" present to a column name there can be 
@@ -74,6 +74,9 @@ const ALTERNATIVE_DROPDOWN_PATHNAMES = {
  * 
  */
 class ClassHelper extends HTMLElement {
+
+    static observedAttributes = ["data-search-with"]
+
     /** @type {Window} handler to popup window */
     popupRef = null;
 
@@ -84,7 +87,7 @@ class ClassHelper extends HTMLElement {
 
     /** 
      * Stores the result from api calls made to rest api,
-     * for the parameters in searchWith attribute of this web component
+     * for the parameters in data-search-with attribute of this web component
      * where a parameter is defined as a dropdown in 
      * @type {Object.<string, Map.<string, string>>} */
     dropdowns = null;
@@ -231,7 +234,7 @@ class ClassHelper extends HTMLElement {
     }
 
     attributeChangedCallback(name, oldValue, _newValue) {
-        if (name === "searchWith") {
+        if (name === "data-search-with") {
             if (!oldValue || oldValue === _newValue) {
                 return;
             }
@@ -289,11 +292,11 @@ class ClassHelper extends HTMLElement {
         }
         this.dropdowns = {};
 
-        if (this.getAttribute("searchWith") == null) {
+        if (this.dataset.searchWith == null) {
             return;
         }
 
-        const params = this.getAttribute("searchWith").split(',');
+        const params = this.dataset.searchWith.split(',');
 
         for (let param of params) {
             if (param.includes("[]")) {
@@ -504,7 +507,7 @@ class ClassHelper extends HTMLElement {
         form.setAttribute("id", "popup-search");
         form.classList.add("popup-search"); // Add class for styling
 
-        const params = this.getAttribute("searchWith").split(',');
+        const params = this.dataset.searchWith.split(',');
 
         const table = document.createElement("table");
         table.classList.add("search-table"); // Add class for styling
@@ -875,7 +878,7 @@ class ClassHelper extends HTMLElement {
 
         popupBody.classList.add("flex-container");
 
-        if (this.getAttribute("searchWith")) {
+        if (this.dataset.searchWith) {
             const searchFrag = this.getSearchFragment(formData);
             popupBody.appendChild(searchFrag);
         }
