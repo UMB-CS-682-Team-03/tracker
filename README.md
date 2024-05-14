@@ -159,11 +159,9 @@ In addition to keyboard navigation, the `<roundup-classhelper>` component can be
 # Requirements
 - Selenium WebDriver
 - GeckoDriver (for Firefox)
-- Splinter (for browser automation)
 
 # Installation Instructions
-1. **Selenium and Splinter Installation**: Open your terminal or command prompt and run:
-   python -m pip install splinter==0.eeeeeeeeeeeeeeee21.0
+1. **Selenium Installation**: Open your terminal or command prompt and run:
    python -m pip install selenium==4.18.1
 
 2. ** GeckoDriver Installation**: 
