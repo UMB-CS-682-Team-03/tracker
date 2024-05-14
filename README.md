@@ -93,7 +93,7 @@ In addition to keyboard navigation, the `<roundup-classhelper>` component can be
 <th i18n:translate="">Nosy List</th>
  <td>
   <span tal:replace="structure context/nosy/field" />
-  <roundup-classhelper searchWith="username,phone,roles[]">
+  <roundup-classhelper data-search-with="username,phone,roles[]">
     <span tal:condition="context/is_edit_ok" tal:replace="structure
     python:db.user.classhelp('username,realname,address', property='nosy', width='600')" />    
   </roundup-classhelper>
@@ -102,24 +102,24 @@ In addition to keyboard navigation, the `<roundup-classhelper>` component can be
   ```
 
   #### Setting Attributes
-  * Set the `searchWith` attribute to specify the fields that can be used for searching (e.g., `searchWith="title,status,keyword"`).
+  * Set the `data-search-with` attribute to specify the fields that can be used for searching (e.g., `data-search-with="title,status,keyword"`).
 
   * Optionally, customize the search parameters using the following syntax:
       * `"status[]"`: Displays a dropdown for the "status" field, showing all possible values. 
          ```html
-         <roundup-classhelper searchWith="title,status[],    keyword[]">
+         <roundup-classhelper data-search-with="title,status[],    keyword[]">
             <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder', pagesize=100)" />
          </roundup-classhelper>
          ```
       * `"keyword[]+name"`: Sorts the "keyword" dropdown in ascending order by name.
          ```html
-         <roundup-classhelper searchWith="title,status[],keyword[]+name">
+         <roundup-classhelper data-search-with="title,status[],keyword[]+name">
             <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder', pagesize=100)" />
          </roundup-classhelper>
          ```
       * `"keyword[]-name"`: Sorts the "keyword" dropdown in descending order by name.
          ```html
-         <roundup-classhelper searchWith="title,status[],keyword[]-name">
+         <roundup-classhelper data-search-with="title,status[],keyword[]-name">
             <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder', pagesize=100)" />
          </roundup-classhelper>
          ```
@@ -128,7 +128,7 @@ In addition to keyboard navigation, the `<roundup-classhelper>` component can be
    #### User ClassHelper
    * To emulate the normal user ClassHelper behavior (e.g., for username and roles), use the following attribute values:
       ``` html
-      <roundup-classhelper searchWith="username,roles[]">
+      <roundup-classhelper data-search-with="username,roles[]">
          <!-- ClassHelper content -->
       </roundup-classhelper>
       ```
