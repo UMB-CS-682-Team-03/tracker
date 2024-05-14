@@ -91,10 +91,12 @@ class ClassHelper extends HTMLElement {
      * for the parameters in data-search-with attribute of this web component
      * where a parameter is defined as a dropdown in 
      * @type {Object.<string, Map.<string, string>>} */
-    dropdowns = null;
+    dropdownsData = null;
 
     /** @type {HTMLAnchorElement} */
     helpurl = null;
+
+    /** @type {string} */
     helpurlScript = null;
 
     /** @type {HelpUrlProps} */
@@ -141,7 +143,7 @@ class ClassHelper extends HTMLElement {
                 console.error(error);
             });
 
-        this.fetchDropdowns()
+        this.fetchDropdownsData()
             .catch(error => {
                 // Top level handling for dropdowns errors.
                 console.error(error);
@@ -240,7 +242,7 @@ class ClassHelper extends HTMLElement {
             if (!oldValue || oldValue === _newValue) {
                 return;
             }
-            this.fetchDropdowns().catch(error => {
+            this.fetchDropdownsData().catch(error => {
                 // Top level handling for dropdowns errors.
                 console.error(error.message);
             });
@@ -287,12 +289,12 @@ class ClassHelper extends HTMLElement {
         }
     }
 
-    async fetchDropdowns() {
+    async fetchDropdownsData() {
         // Singleton implementation
-        if (this.dropdowns != null) {
+        if (this.dropdownsData != null) {
             return;
         }
-        this.dropdowns = {};
+        this.dropdownsData = {};
 
         if (this.dataset.searchWith == null) {
             return;
@@ -348,7 +350,7 @@ class ClassHelper extends HTMLElement {
                     }
 
                 }
-                this.dropdowns[param] = list;
+                this.dropdownsData[param] = list;
             }
         }
     }
@@ -501,7 +503,7 @@ class ClassHelper extends HTMLElement {
             label.textContent = param + ":";
 
             let input;
-            if (this.dropdowns[param]) {
+            if (this.dropdownsData[param]) {
                 input = document.createElement("select");
 
                 let nullOption = document.createElement("option");
@@ -509,10 +511,10 @@ class ClassHelper extends HTMLElement {
                 nullOption.textContent = "---";
                 input.appendChild(nullOption);
 
-                for (let key of this.dropdowns[param].keys()) {
+                for (let key of this.dropdownsData[param].keys()) {
                     let option = document.createElement("option");
                     option.value = key;
-                    option.textContent = this.dropdowns[param].get(key);
+                    option.textContent = this.dropdownsData[param].get(key);
                     if (formData) {
                         let value = formData.get(param);
                         if (value && value == key) {
