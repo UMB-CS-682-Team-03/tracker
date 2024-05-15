@@ -836,7 +836,7 @@ class ClassHelper extends HTMLElement {
             if (links?.prev?.length > 0) {
                 prevPageURL = links.prev[0].uri;
             }
-            if (links?.next.length > 0) {
+            if (links?.next?.length > 0) {
                 nextPageURL = links.next[0].uri;
             }
         } catch (error) {
@@ -885,11 +885,13 @@ class ClassHelper extends HTMLElement {
             separator.classList.add("separator");
             body.appendChild(separator);
 
-            const accumulatorFrag = this.getAccumulatorFragment(preSelectedValues);
-            body.appendChild(accumulatorFrag);
+            if (props.formProperty) {
+                const accumulatorFrag = this.getAccumulatorFragment(preSelectedValues);
+                body.appendChild(accumulatorFrag);
+            }
         });
 
-        this.popupRef.document.addEventListener("keydown", (e) => {
+        this.popupRef.addEventListener("keydown", (e) => {
             if (e.target.tagName == "TR") {
                 if (e.key === "ArrowDown" && e.target === this.popupRef.document.activeElement) {
                     e.preventDefault();
@@ -951,8 +953,6 @@ class ClassHelper extends HTMLElement {
      * @throws {Error} when fetching or parsing data from roundup rest api fails
      */
     async pageChange(apiURL, props) {
-        let accumulatorValues = this.popupRef.document.getElementById("popup-preview").value.split(",");
-
         let resp;
         try {
             resp = await fetch(apiURL);
@@ -982,6 +982,14 @@ class ClassHelper extends HTMLElement {
         }
         if (links.self && links.self.length > 0) {
             selfPageURL = new URL(links.self[0].uri);
+        }
+
+        /** @type {string[]} */
+        let accumulatorValues = [];
+
+        const preview = this.popupRef.document.getElementById("popup-preview");
+        if (preview) {
+            accumulatorValues = preview.value.split(",");
         }
 
         const popupDocument = this.popupRef.document;
@@ -1002,6 +1010,10 @@ class ClassHelper extends HTMLElement {
      * @param {string} value
      */
     valueSelected(props, value) {
+        if (!props.formProperty) {
+            return;
+        }
+
         const input = document.getElementsByName(props.formProperty).item(0);
         input.value = value;
         this.popupRef.close();
@@ -1013,8 +1025,6 @@ class ClassHelper extends HTMLElement {
      * @throws {Error} when fetching or parsing data from roundup rest api fails
      */
     async searchEvent(apiURL, props) {
-        let accumulatorValues = this.popupRef.document.getElementById("popup-preview").value.split(",");
-
         let resp;
         try {
             resp = await fetch(apiURL);
@@ -1044,6 +1054,14 @@ class ClassHelper extends HTMLElement {
         }
         if (links.self && links.self.length > 0) {
             selfPageURL = new URL(links.self[0].uri);
+        }
+
+        /** @type {string[]} */
+        let accumulatorValues = [];
+
+        const preview = this.popupRef.document.getElementById("popup-preview");
+        if (preview) {
+            accumulatorValues = preview.value.split(",");
         }
 
         const popupDocument = this.popupRef.document;
@@ -1065,6 +1083,10 @@ class ClassHelper extends HTMLElement {
      */
     selectionEvent(value) {
         const preview = this.popupRef.document.getElementById("popup-preview");
+        if (!preview) {
+            return;
+        }
+
         if (preview.value == "" || preview.value == null) {
             preview.value = value
         } else {
