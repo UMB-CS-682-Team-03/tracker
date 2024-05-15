@@ -155,26 +155,27 @@ In addition to keyboard navigation, the `<roundup-classhelper>` component can be
 
 
 # Running the Test Suite
-```
-# Requirements
+
+### Requirements
 - Selenium WebDriver
 - GeckoDriver (for Firefox)
 
-# Installation Instructions
-1. **Selenium Installation**: Open your terminal or command prompt and run:
+### Installation Instructions
+1. **Selenium Installation**:
+   Open your terminal or command prompt and run:
    python -m pip install selenium==4.18.1
 
-2. ** GeckoDriver Installation**: 
+2. **GeckoDriver Installation**:   
 	pip install geckodriver==0.0.1
 
 
-#To run the code in a Headless Environment:
+#### To run the code in a Headless Environment:
 	Set "HEADLESS = TRUE " in line 12.
 
-#To run the code without Headless:
+#### To run the code without Headless:
 	Set " HEADLESS = FALSE"  in line 12. 
 
 
-# Run the test_suite
+### Run the test_suite
 	python test_classhelper.py
-```
+
