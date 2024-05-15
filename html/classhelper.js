@@ -274,7 +274,7 @@ class ClassHelper extends HTMLElement {
 
         let tracker = window.location.pathname.split('/')[1];
         let url = new URL(window.location.origin + "/" + tracker);
-        url.searchParams.append("@template", "json");
+        url.searchParams.append("@template", "translation");
         url.searchParams.append("properties", Object.keys(translations).join(','));
 
         let resp, json;
@@ -974,9 +974,13 @@ class ClassHelper extends HTMLElement {
                     this.popupRef.document.querySelector("tr.row-style").parentElement.lastChild.focus();
                 }
             } else if (e.key === ">") {
-                this.popupRef.document.getElementById("popup-pagination").lastChild.focus();
+                if (e.target.tagName === "TR" || e.target.tagName != "INPUT" && e.target.tagName != "SELECT") {
+                    this.popupRef.document.getElementById("popup-pagination").lastChild.focus();
+                }
             } else if (e.key === "<") {
-                this.popupRef.document.getElementById("popup-pagination").firstChild.focus();
+                if (e.target.tagName === "TR" || e.target.tagName != "INPUT" && e.target.tagName != "SELECT") {
+                    this.popupRef.document.getElementById("popup-pagination").firstChild.focus();
+                }
             } else if (e.key === "Enter") {
                 if (e.target.tagName == "TR" && e.shiftKey == false) {
                     e.preventDefault();
@@ -1207,7 +1211,17 @@ function enableClassHelper() {
     /**@todo - make api call? get 404 then early return? */
     // http://localhost/demo/rest
 
-    customElements.define(CLASSHELPER_TAG_NAME, ClassHelper);
+    fetch("rest")
+        .then(resp => resp.json())
+        .then(json => {
+            if (json.error) {
+                console.log(json.error);
+                return;
+            }
+            customElements.define(CLASSHELPER_TAG_NAME, ClassHelper);
+        }).catch(err => {
+            console.error(err);
+        });
 }
 
 enableClassHelper();
