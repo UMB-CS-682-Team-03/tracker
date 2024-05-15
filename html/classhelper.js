@@ -865,7 +865,7 @@ class ClassHelper extends HTMLElement {
 
         if (!resp.ok) {
             let message = `Unexpected response\n`;
-            message += `url: ${url.toString()}\n`;
+            message += `url: ${apiURL.toString()}\n`;
             message += `response status: ${resp.status}\n`;
             throw new Error(message, { cause: json });
         }
@@ -1034,7 +1034,7 @@ class ClassHelper extends HTMLElement {
 
         if (!resp.ok) {
             let message = `Unexpected response\n`;
-            message += `url: ${url.toString()}\n`;
+            message += `url: ${apiURL.toString()}\n`;
             message += `response status: ${resp.status}\n`;
             throw new Error(message, { cause: json });
         }
@@ -1122,7 +1122,7 @@ class ClassHelper extends HTMLElement {
 
         if (!resp.ok) {
             let message = `Unexpected response\n`;
-            message += `url: ${url.toString()}\n`;
+            message += `url: ${apiURL.toString()}\n`;
             message += `response status: ${resp.status}\n`;
             throw new Error(message, { cause: json });
         }
