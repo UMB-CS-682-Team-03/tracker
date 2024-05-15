@@ -645,7 +645,7 @@ class ClassHelper extends HTMLElement {
         info.textContent = `${startNumber} - ${endNumber}`;
 
         const prev = document.createElement("button");
-        prev.innerHTML = ">";
+        prev.innerHTML = "<";
         prev.setAttribute("aria-label", ClassHelper.translations["Prev"]);
         prev.setAttribute("disabled", "disabled");
         if (prevUrl) {
@@ -705,6 +705,7 @@ class ClassHelper extends HTMLElement {
         });
 
         const apply = document.createElement("button");
+        apply.id = "popup-apply";
         apply.setAttribute("class", "acc-apply");
         apply.textContent = ClassHelper.translations["Apply"];
         apply.addEventListener("click", () => {
@@ -925,24 +926,36 @@ class ClassHelper extends HTMLElement {
         });
 
         this.popupRef.addEventListener("keydown", (e) => {
-            if (e.target.tagName == "TR") {
-                if (e.key === "ArrowDown" && e.target === this.popupRef.document.activeElement) {
+            if (e.key === "ArrowDown") {
+                if (e.target.tagName === "TR") {
                     e.preventDefault();
                     if (e.target.nextElementSibling != null) {
                         e.target.nextElementSibling.focus();
                     } else {
                         e.target.parentElement.firstChild.focus();
                     }
+                } else if (e.target.tagName != "INPUT" && e.target.tagName != "SELECT") {
+                    e.preventDefault();
+                    this.popupRef.document.querySelector("tr.rowstyle").parentElement.firstChild.focus();
                 }
-                if (e.key === "ArrowUp" && e.target === this.popupRef.document.activeElement) {
+            } else if (e.key === "ArrowUp") {
+                if (e.target.tagName === "TR") {
                     e.preventDefault();
                     if (e.target.previousElementSibling != null) {
                         e.target.previousElementSibling.focus();
                     } else {
                         e.target.parentElement.lastChild.focus();
                     }
+                } else if (e.target.tagName != "INPUT" && e.target.tagName != "SELECT") {
+                    e.preventDefault();
+                    this.popupRef.document.querySelector("tr.rowstyle").parentElement.lastChild.focus();
                 }
-                if (e.key === "Enter" || e.key === " ") {
+            } else if (e.key === ">") {
+                this.popupRef.document.getElementById("popup-pagination").lastChild.focus();
+            } else if (e.key === "<") {
+                this.popupRef.document.getElementById("popup-pagination").firstChild.focus();
+            } else if (e.key === "Enter") {
+                if (e.target.tagName == "TR" && e.shiftKey == false) {
                     e.preventDefault();
                     let tr = e.target;
                     tr.children.item(0).checked = !tr.children.item(0).checked;
@@ -951,30 +964,23 @@ class ClassHelper extends HTMLElement {
                             value: tr.dataset.id
                         }
                     }));
-                }
-                if (e.key === ">") {
-                    this.popupRef.document.getElementById("popup-pagination").lastChild.focus();
-                }
-                if (e.key === "<") {
-                    this.popupRef.document.getElementById("popup-pagination").firstChild.focus();
-                }
-                return;
-            }
-
-            if (e.target.tagName != "INPUT" && e.target.tagName != "SELECT") {
-                if (e.key === "ArrowDown") {
+                } else if (e.shiftKey) {
                     e.preventDefault();
-                    this.popupRef.document.querySelector("tr.rowstyle").parentElement.firstChild.focus();
+                    const applyBtn = this.popupRef.document.getElementById("popup-apply");
+                    if (applyBtn) {
+                        applyBtn.focus();
+                    }
                 }
-                if (e.key === "ArrowUp") {
+            } else if (e.key === " ") {
+                if (e.target.tagName == "TR" && e.shiftKey == false) {
                     e.preventDefault();
-                    this.popupRef.document.querySelector("tr.rowstyle").parentElement.lastChild.focus();
-                }
-                if (e.key === ">") {
-                    this.popupRef.document.getElementById("popup-pagination").lastChild.focus();
-                }
-                if (e.key === "<") {
-                    this.popupRef.document.getElementById("popup-pagination").firstChild.focus();
+                    let tr = e.target;
+                    tr.children.item(0).checked = !tr.children.item(0).checked;
+                    this.dispatchEvent(new CustomEvent("selection", {
+                        detail: {
+                            value: tr.dataset.id
+                        }
+                    }));
                 }
             }
         });
