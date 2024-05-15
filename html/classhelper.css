@@ -37,11 +37,11 @@ table tr:hover {
     cursor: pointer;
 }
 
-.rowstyle {
+.row-style {
     cursor: pointer;
 }
 
-.tableheader {
+.table-header {
     width: 15px;
 }
 
@@ -97,7 +97,7 @@ table tr:hover {
 }
 
 
-.resetmargin {
+.reset-button {
     margin-left: 60px;
 }
 

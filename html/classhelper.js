@@ -598,7 +598,6 @@ class ClassHelper extends HTMLElement {
 
         const reset = document.createElement("button");
         reset.textContent = ClassHelper.translations["Reset"];
-        reset.setAttribute("class", "resetmargin");
         reset.classList.add("reset-button"); // Add class for styling
         reset.addEventListener("click", (e) => {
             e.preventDefault();
@@ -685,11 +684,11 @@ class ClassHelper extends HTMLElement {
         const fragment = document.createDocumentFragment();
         const container = document.createElement("div");
         container.id = "popup-control";
-        container.setAttribute("class", "popup-control");
+        container.classList.add("popup-control");
 
         const preview = document.createElement("input");
         preview.id = "popup-preview";
-        preview.setAttribute("class", "popup-preview");
+        preview.classList.add("popup-preview");
         preview.type = "text";
         preview.name = "preview";
         if (preSelectedValues.length > 0) {
@@ -708,7 +707,7 @@ class ClassHelper extends HTMLElement {
 
         const apply = document.createElement("button");
         apply.id = "popup-apply";
-        apply.setAttribute("class", "acc-apply");
+        apply.classList.add("popup-apply");
         apply.textContent = ClassHelper.translations["Apply"];
         apply.addEventListener("click", () => {
             this.dispatchEvent(new CustomEvent("valueSelected", {
@@ -730,7 +729,7 @@ class ClassHelper extends HTMLElement {
      * @param {Object.<string, any>[]} data 
      * @returns 
      */
-    getTableFragment(headers, data, preSelectedValues) {
+    getTableFragment(headers, data, preSelectedValues, includeCheckbox = true) {
         const fragment = document.createDocumentFragment();
 
         const container = document.createElement('div');
@@ -745,10 +744,13 @@ class ClassHelper extends HTMLElement {
 
         // Create table headers
         const headerRow = document.createElement('tr');
-        let thx = document.createElement("th");
-        thx.textContent = "X";
-        thx.setAttribute("class", "tableheader");
-        headerRow.appendChild(thx);
+
+        if (includeCheckbox) {
+            let thx = document.createElement("th");
+            thx.textContent = "X";
+            thx.classList.add("table-header");
+            headerRow.appendChild(thx);
+        }
 
         headers.forEach(header => {
             const th = document.createElement('th');
@@ -762,16 +764,17 @@ class ClassHelper extends HTMLElement {
             const row = document.createElement('tr');
             row.dataset.id = entry[headers[0]];
             row.setAttribute("tabindex", 0);
+            row.classList.add("row-style");
 
-            const checkbox = document.createElement("input");
-            checkbox.setAttribute("type", "checkbox");
-            checkbox.checked = false;
-            checkbox.setAttribute("tabindex", -1);
-
-            row.appendChild(checkbox);
-            row.setAttribute("class", "rowstyle");
-            if (preSelectedValues.includes(entry[headers[0]])) {
-                checkbox.checked = true;
+            if (includeCheckbox) {
+                const checkbox = document.createElement("input");
+                checkbox.setAttribute("type", "checkbox");
+                checkbox.checked = false;
+                checkbox.setAttribute("tabindex", -1);
+                row.appendChild(checkbox);
+                if (preSelectedValues.includes(entry[headers[0]])) {
+                    checkbox.checked = true;
+                }
             }
 
             headers.forEach(header => {
@@ -805,9 +808,12 @@ class ClassHelper extends HTMLElement {
 
         // Create table footer with the same column values as headers
         const footerRow = document.createElement('tr');
-        let footThx = document.createElement("th");
-        footThx.textContent = "X";
-        footerRow.appendChild(footThx);
+
+        if (includeCheckbox) {
+            let footThx = document.createElement("th");
+            footThx.textContent = "X";
+            footerRow.appendChild(footThx);
+        }
 
         headers.forEach(header => {
             const th = document.createElement('th');
@@ -894,6 +900,10 @@ class ClassHelper extends HTMLElement {
         const popupFeatures = CLASSHELPER_POPUP_FEATURES(props.width, props.height);
         this.popupRef = window.open(CLASSHELPER_POPUP_URL, CLASSHELPER_POPUP_TARGET, popupFeatures);
 
+        if (this.popupRef == null) {
+            throw new Error("Browser Failed to open Popup Window");
+        }
+
         this.popupRef.addEventListener("load", (event) => {
             const doc = event.target;
             const body = doc.body;
@@ -925,7 +935,7 @@ class ClassHelper extends HTMLElement {
             const paginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize, collection.length);
             body.appendChild(paginationFrag);
 
-            const tableFrag = this.getTableFragment(props.fields, collection, preSelectedValues);
+            const tableFrag = this.getTableFragment(props.fields, collection, preSelectedValues, !!props.formProperty);
             body.appendChild(tableFrag);
 
             const separator = doc.createElement("div");
@@ -949,7 +959,7 @@ class ClassHelper extends HTMLElement {
                     }
                 } else if (e.target.tagName != "INPUT" && e.target.tagName != "SELECT") {
                     e.preventDefault();
-                    this.popupRef.document.querySelector("tr.rowstyle").parentElement.firstChild.focus();
+                    this.popupRef.document.querySelector("tr.row-style").parentElement.firstChild.focus();
                 }
             } else if (e.key === "ArrowUp") {
                 if (e.target.tagName === "TR") {
@@ -961,7 +971,7 @@ class ClassHelper extends HTMLElement {
                     }
                 } else if (e.target.tagName != "INPUT" && e.target.tagName != "SELECT") {
                     e.preventDefault();
-                    this.popupRef.document.querySelector("tr.rowstyle").parentElement.lastChild.focus();
+                    this.popupRef.document.querySelector("tr.row-style").parentElement.lastChild.focus();
                 }
             } else if (e.key === ">") {
                 this.popupRef.document.getElementById("popup-pagination").lastChild.focus();
@@ -1070,7 +1080,7 @@ class ClassHelper extends HTMLElement {
         popupBody.replaceChild(newPaginationFrag, oldPaginationFrag);
 
         let oldTableFrag = popupDocument.getElementById("popup-tablediv");
-        let newTableFrag = this.getTableFragment(props.fields, collection, accumulatorValues);
+        let newTableFrag = this.getTableFragment(props.fields, collection, accumulatorValues, !!props.formProperty);
         popupBody.replaceChild(newTableFrag, oldTableFrag);
     }
 
@@ -1160,7 +1170,7 @@ class ClassHelper extends HTMLElement {
 
 
         let oldTableFrag = popupDocument.getElementById("popup-tablediv");
-        let newTableFrag = this.getTableFragment(props.fields, collection, accumulatorValues);
+        let newTableFrag = this.getTableFragment(props.fields, collection, accumulatorValues, !!props.formProperty);
         popupBody.replaceChild(newTableFrag, oldTableFrag);
     }
 
