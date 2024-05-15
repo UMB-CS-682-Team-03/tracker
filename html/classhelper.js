@@ -607,12 +607,15 @@ class ClassHelper extends HTMLElement {
 
         const info = document.createElement('span');
 
-        const startNumber = (parseInt(index) - 1) * parseInt(size) + 1;
-        let endNumber;
-        if (total < size) {
-            endNumber = startNumber + total - 1;
-        } else {
-            endNumber = parseInt(index) * parseInt(size);
+        let startNumber = 0, endNumber = 0;
+
+        if (total > 0) {
+            startNumber = (parseInt(index) - 1) * parseInt(size) + 1;
+            if (total < size) {
+                endNumber = startNumber + total - 1;
+            } else {
+                endNumber = parseInt(index) * parseInt(size);
+            }
         }
 
         info.textContent = `${startNumber} - ${endNumber}`;
