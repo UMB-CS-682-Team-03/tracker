@@ -17,10 +17,10 @@ msgid "Submit"
 msgstr "gehen"
 
 msgid "Next"
-msgstr ">"
+msgstr "nächste"
 
 msgid "Prev"
-msgstr "<"
+msgstr "vorherige"
 
 msgid "Apply"
 msgstr "anwenden"

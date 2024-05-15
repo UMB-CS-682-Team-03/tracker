@@ -645,7 +645,8 @@ class ClassHelper extends HTMLElement {
         info.textContent = `${startNumber} - ${endNumber}`;
 
         const prev = document.createElement("button");
-        prev.innerHTML = ClassHelper.translations["Prev"];
+        prev.innerHTML = ">";
+        prev.setAttribute("aria-label", ClassHelper.translations["Prev"]);
         prev.setAttribute("disabled", "disabled");
         if (prevUrl) {
             prev.removeAttribute("disabled");
@@ -659,7 +660,8 @@ class ClassHelper extends HTMLElement {
         }
 
         const next = document.createElement("button");
-        next.innerHTML = ClassHelper.translations["Next"];
+        next.innerHTML = ">";
+        next.setAttribute("aria-label", ClassHelper.translations["Next"]);
         next.setAttribute("disabled", "disabled");
         if (nextUrl) {
             next.removeAttribute("disabled");
