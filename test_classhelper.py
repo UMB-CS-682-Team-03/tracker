@@ -9,13 +9,14 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-
+HEADLESS = False
 
 class TestKeywords(unittest.TestCase):
     def setUp(self):
         # Initialize the Firefox driver with headless option setting to True.
         options = webdriver.FirefoxOptions()
-        options.add_argument('--headless')
+        if HEADLESS:
+            options.add_argument('--headless')
 
         self.driver = webdriver.Firefox(options=options)
     def tearDown(self):
@@ -106,7 +107,8 @@ class TestNosy(unittest.TestCase):
     def setUp(self):
         # Initialize the Firefox driver with headless option setting to True.
         options = webdriver.FirefoxOptions()
-        options.add_argument('--headless')
+        if HEADLESS:
+            options.add_argument('--headless')
 
         self.driver = webdriver.Firefox(options=options)
 
@@ -227,7 +229,8 @@ class TestNosy1(unittest.TestCase):
     def setUp(self):
         # Initialize the Firefox driver with headless option setting to True.
         options = webdriver.FirefoxOptions()
-        options.add_argument('--headless')
+        if HEADLESS:
+            options.add_argument('--headless')
 
         self.driver = webdriver.Firefox(options=options)
 
@@ -350,7 +353,8 @@ class TestSuperseder(unittest.TestCase):
 
     def setUp(self):
         options = webdriver.FirefoxOptions()
-        options.add_argument('--headless')
+        if HEADLESS:
+            options.add_argument('--headless')
 
         self.driver = webdriver.Firefox(options=options)
 
@@ -439,7 +443,8 @@ class TestSupersederWithKeywords(unittest.TestCase):
 
     def setUp(self):
         options = webdriver.FirefoxOptions()
-        options.add_argument('--headless')
+        if HEADLESS:
+            options.add_argument('--headless')
 
         self.driver = webdriver.Firefox(options=options)
 
@@ -538,7 +543,57 @@ class TestSupersederWithKeywords(unittest.TestCase):
         print("Test Case 5 -- success")
 
 
+class TestFallbackMechanism(unittest.TestCase):
+    def setUp(self):
+        options = webdriver.FirefoxOptions()
+        if HEADLESS:
+            options.add_argument('--headless')
 
+        self.driver = webdriver.Firefox(options=options)
+        
+    def tearDown(self):
+        self.driver.quit()
+        
+    def test_demo(self):
+        wait = WebDriverWait(self.driver, 10)
+
+        # Open URL /demo/
+        self.driver.get("http://localhost:8917/demo/")
+
+        # Set window size
+        self.driver.set_window_size(786, 824)
+
+        # Click on element with name '__login_name'
+        wait.until(EC.element_to_be_clickable((By.NAME, "__login_name"))).click()
+        # Type "admin" into the element with name attribute equal to "__login_name"
+        self.driver.find_element(By.NAME, "__login_name").send_keys("admin")
+
+        # Type "admin" into the element with name attribute equal to "__login_password"
+        self.driver.find_element(By.NAME, "__login_password").send_keys("admin")
+
+        # Click on the element with CSS selector ".userblock > input:nth-child(12)"
+        self.driver.find_element(By.CSS_SELECTOR, ".userblock > input:nth-child(12)").click()
+
+        # Click on element with link text 'Create New'
+        wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Create New"))).click()
+        
+        print(self.driver.current_url)
+        self.driver.get(self.driver.current_url + "#classhelper-wc-toggle")
+        self.driver.execute_script("location.reload()")
+        
+        time.sleep(3)
+
+        # Click on element with link text '(list)'
+        wait.until(EC.presence_of_element_located((By.LINK_TEXT, "(list)"))).click()
+        
+        main_window_handle = self.driver.current_window_handle
+
+        # Switch to the popup window
+        for handle in self.driver.window_handles:
+            if handle != main_window_handle:
+                self.driver.switch_to.window(handle)
+        
+        self.assertEqual(self.driver.title, "superseder help - Roundup issue tracker")
 
 
 
