@@ -299,7 +299,8 @@ class ClassHelper extends HTMLElement {
             let message = `Unexpected response\n`;
             message += `url: ${url.toString()}\n`;
             message += `response status: ${resp.status}\n`;
-            throw new Error(message, { cause: json });
+            message += `response body: ${JSON.stringify(json)}\n`;
+            throw new Error(message);
         }
 
         ClassHelper.translations = translations;
@@ -357,7 +358,8 @@ class ClassHelper extends HTMLElement {
                     let message = `Unexpected response\n`;
                     message += `url: ${url.toString()}\n`;
                     message += `response status: ${resp.status}\n`;
-                    throw new Error(message, { cause: json });
+                    message += `response body: ${JSON.stringify(json)}\n`;
+                    throw new Error(message);
                 }
 
                 let list = new Map();
@@ -867,7 +869,8 @@ class ClassHelper extends HTMLElement {
             let message = `Unexpected response\n`;
             message += `url: ${apiURL.toString()}\n`;
             message += `response status: ${resp.status}\n`;
-            throw new Error(message, { cause: json });
+            message += `response body: ${JSON.stringify(json)}\n`;
+            throw new Error(message);
         }
 
         collection = json.data.collection;
@@ -1036,7 +1039,8 @@ class ClassHelper extends HTMLElement {
             let message = `Unexpected response\n`;
             message += `url: ${apiURL.toString()}\n`;
             message += `response status: ${resp.status}\n`;
-            throw new Error(message, { cause: json });
+            message += `response body: ${JSON.stringify(json)}\n`;
+            throw new Error(message);
         }
 
         collection = json.data.collection;
@@ -1124,7 +1128,8 @@ class ClassHelper extends HTMLElement {
             let message = `Unexpected response\n`;
             message += `url: ${apiURL.toString()}\n`;
             message += `response status: ${resp.status}\n`;
-            throw new Error(message, { cause: json });
+            message += `response body: ${JSON.stringify(json)}\n`;
+            throw new Error(message);
         }
 
         collection = json.data.collection;
