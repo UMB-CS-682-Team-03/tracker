@@ -277,19 +277,32 @@ class ClassHelper extends HTMLElement {
         url.searchParams.append("@template", "json");
         url.searchParams.append("properties", Object.keys(translations).join(','));
 
-        let resp;
+        let resp, json;
+
         try {
             resp = await fetch(url);
-            if (!resp.ok) throw new Error("Not 2xx status code.", { cause: resp });
         } catch (error) {
-            throw new Error("error fetching translations from roundup rest api", { cause: error });
+            let message = `Error fetching translations from roundup rest api\n`;
+            message += `url: ${url.toString()}\n`;
+            throw new Error(message, { cause: error });
         }
 
         try {
-            ClassHelper.translations = await resp.json();
+            json = await resp.json();
         } catch (error) {
-            throw new Error("error parsing translation json from roundup rest api", { cause: error });
+            let message = `Error parsing json from roundup rest api\n`;
+            message += `url: ${url.toString()}\n`;
+            throw new Error(message, { cause: error });
         }
+
+        if (!resp.ok) {
+            let message = `Unexpected response\n`;
+            message += `url: ${url.toString()}\n`;
+            message += `response status: ${resp.status}\n`;
+            throw new Error(message, { cause: json });
+        }
+
+        ClassHelper.translations = translations;
     }
 
     async fetchDropdownsData() {
@@ -323,19 +336,28 @@ class ClassHelper extends HTMLElement {
                     url += `&@sort=${sortOrder}`;
                 }
 
-                let resp;
+                let resp, json;
                 try {
                     resp = await fetch(url);
-                    if (!resp.ok) throw new Error("Not 2xx status code.", { cause: resp });
                 } catch (error) {
-                    throw new Error("error fetching dropdowns from roundup rest api", { cause: error });
+                    let message = `Error fetching translations from roundup rest api\n`;
+                    message += `url: ${url.toString()}\n`;
+                    throw new Error(message, { cause: error });
                 }
 
-                let json;
                 try {
                     json = await resp.json();
                 } catch (error) {
-                    throw new Error("error parsing dropdown json from roundup rest api");
+                    let message = `Error parsing json from roundup rest api\n`;
+                    message += `url: ${url.toString()}\n`;
+                    throw new Error(message, { cause: error });
+                }
+
+                if (!resp.ok) {
+                    let message = `Unexpected response\n`;
+                    message += `url: ${url.toString()}\n`;
+                    message += `response status: ${resp.status}\n`;
+                    throw new Error(message, { cause: json });
                 }
 
                 let list = new Map();
@@ -345,6 +367,8 @@ class ClassHelper extends HTMLElement {
                     let valueKey = Object.keys(json.data.collection[0]).find(key => key !== "id" && key !== "link");
 
                     if (!valueKey) {
+                        let message = `No suitable key found for value in dropdown data\n`;
+                        message += `url: ${url.toString()}\n`;
                         throw new Error("No value key found in dropdown data for: " + url);
                     }
 
@@ -810,7 +834,7 @@ class ClassHelper extends HTMLElement {
     async openPopUp(apiURL, props) {
 
         /** @type {Response} */
-        let resp;
+        let resp, json;
         /** @type {any} */
         let collection;
         /** @type {string} */
@@ -825,28 +849,32 @@ class ClassHelper extends HTMLElement {
         } catch (error) {
             let message = `Error fetching data from roundup rest api`;
             message += `url: ${apiURL.toString()}\n`;
-            if (resp?.status) {
-                message += `response status: ${resp.status}\n`;
-            }
             throw new Error(message, { cause: error });
         }
 
         try {
-            const json = await resp.json();
-            collection = json.data.collection;
-
-            const links = json.data["@links"];
-            if (links?.prev?.length > 0) {
-                prevPageURL = links.prev[0].uri;
-            }
-            if (links?.next?.length > 0) {
-                nextPageURL = links.next[0].uri;
-            }
+            json = await resp.json();
         } catch (error) {
             let message = "Error parsing json from roundup rest api\n";
             message += `url: ${apiURL.toString()}\n`;
-            message += `response status: ${resp.status}`;
             throw new Error(message, { cause: error });
+        }
+
+        if (!resp.ok) {
+            let message = `Unexpected response\n`;
+            message += `url: ${url.toString()}\n`;
+            message += `response status: ${resp.status}\n`;
+            throw new Error(message, { cause: json });
+        }
+
+        collection = json.data.collection;
+
+        const links = json.data["@links"];
+        if (links?.prev?.length > 0) {
+            prevPageURL = links.prev[0].uri;
+        }
+        if (links?.next?.length > 0) {
+            nextPageURL = links.next[0].uri;
         }
 
         if (props.formProperty) {
@@ -956,39 +984,55 @@ class ClassHelper extends HTMLElement {
      * @throws {Error} when fetching or parsing data from roundup rest api fails
      */
     async pageChange(apiURL, props) {
-        let resp;
+
+        /** @type {Response} */
+        let resp, json;
+        /** @type {any} */
+        let collection;
+        /** @type {string} */
+        let prevPageURL;
+        /** @type {string} */
+        let nextPageURL;
+        /** @type {URL} */
+        let selfPageURL;
+        /** @type {string[]} */
+        let accumulatorValues = [];
+
         try {
             resp = await fetch(apiURL);
         } catch (error) {
-            // Show message fail to load data
-            throw new Error("error fetching data from roundup rest api");
+            let message = `Error fetching data from roundup rest api`;
+            message += `url: ${apiURL.toString()}\n`;
+            throw new Error(message, { cause: error });
         }
 
-        let json;
         try {
             json = await resp.json();
         } catch (error) {
-            // Show message fail to parse json
-            throw new Error("error parsing json from roundup rest api");
+            let message = "Error parsing json from roundup rest api\n";
+            message += `url: ${apiURL.toString()}\n`;
+            throw new Error(message, { cause: error });
         }
 
-        const data = json.data;
+        if (!resp.ok) {
+            let message = `Unexpected response\n`;
+            message += `url: ${url.toString()}\n`;
+            message += `response status: ${resp.status}\n`;
+            throw new Error(message, { cause: json });
+        }
+
+        collection = json.data.collection;
+
         const links = json.data["@links"];
-
-        let prevPageURL, nextPageURL, selfPageURL;
-
-        if (links.prev && links.prev.length > 0) {
+        if (links?.prev?.length > 0) {
             prevPageURL = links.prev[0].uri;
         }
-        if (links.next && links.next.length > 0) {
+        if (links?.next?.length > 0) {
             nextPageURL = links.next[0].uri;
         }
-        if (links.self && links.self.length > 0) {
+        if (links?.self?.length > 0) {
             selfPageURL = new URL(links.self[0].uri);
         }
-
-        /** @type {string[]} */
-        let accumulatorValues = [];
 
         const preview = this.popupRef.document.getElementById("popup-preview");
         if (preview) {
@@ -1000,11 +1044,11 @@ class ClassHelper extends HTMLElement {
         const pageIndex = selfPageURL.searchParams.get("@page_index");
 
         const oldPaginationFrag = popupDocument.getElementById("popup-pagination");
-        const newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, pageIndex, props.pageSize, data.collection.length);
+        const newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, pageIndex, props.pageSize, collection.length);
         popupBody.replaceChild(newPaginationFrag, oldPaginationFrag);
 
         let oldTableFrag = popupDocument.getElementById("popup-tablediv");
-        let newTableFrag = this.getTableFragment(props.fields, data.collection, accumulatorValues);
+        let newTableFrag = this.getTableFragment(props.fields, collection, accumulatorValues);
         popupBody.replaceChild(newTableFrag, oldTableFrag);
     }
 
@@ -1028,39 +1072,55 @@ class ClassHelper extends HTMLElement {
      * @throws {Error} when fetching or parsing data from roundup rest api fails
      */
     async searchEvent(apiURL, props) {
-        let resp;
+
+        /** @type {Response} */
+        let resp, json;
+        /** @type {any} */
+        let collection;
+        /** @type {string} */
+        let prevPageURL;
+        /** @type {string} */
+        let nextPageURL;
+        /** @type {URL} */
+        let selfPageURL;
+        /** @type {string[]} */
+        let accumulatorValues = [];
+
         try {
             resp = await fetch(apiURL);
         } catch (error) {
-            // Show message fail to load data
-            throw new Error("error fetching data from roundup rest api");
+            let message = `Error fetching data from roundup rest api`;
+            message += `url: ${apiURL.toString()}\n`;
+            throw new Error(message, { cause: error });
         }
 
-        let json;
         try {
             json = await resp.json();
         } catch (error) {
-            // Show message fail to parse json
-            throw new Error("error parsing json from roundup rest api");
+            let message = "Error parsing json from roundup rest api\n";
+            message += `url: ${apiURL.toString()}\n`;
+            throw new Error(message, { cause: error });
         }
 
-        const data = json.data;
+        if (!resp.ok) {
+            let message = `Unexpected response\n`;
+            message += `url: ${url.toString()}\n`;
+            message += `response status: ${resp.status}\n`;
+            throw new Error(message, { cause: json });
+        }
+
+        collection = json.data.collection;
+
         const links = json.data["@links"];
-
-        let prevPageURL, nextPageURL, selfPageURL;
-
-        if (links.prev && links.prev.length > 0) {
+        if (links?.prev?.length > 0) {
             prevPageURL = links.prev[0].uri;
         }
-        if (links.next && links.next.length > 0) {
+        if (links?.next?.length > 0) {
             nextPageURL = links.next[0].uri;
         }
-        if (links.self && links.self.length > 0) {
+        if (links?.self?.length > 0) {
             selfPageURL = new URL(links.self[0].uri);
         }
-
-        /** @type {string[]} */
-        let accumulatorValues = [];
 
         const preview = this.popupRef.document.getElementById("popup-preview");
         if (preview) {
@@ -1072,12 +1132,12 @@ class ClassHelper extends HTMLElement {
         const pageIndex = selfPageURL.searchParams.get("@page_index");
 
         const oldPaginationFrag = popupDocument.getElementById("popup-pagination");
-        let newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, pageIndex, props.pageSize, data.collection.length);
+        let newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, pageIndex, props.pageSize, collection.length);
         popupBody.replaceChild(newPaginationFrag, oldPaginationFrag);
 
 
         let oldTableFrag = popupDocument.getElementById("popup-tablediv");
-        let newTableFrag = this.getTableFragment(props.fields, data.collection, accumulatorValues);
+        let newTableFrag = this.getTableFragment(props.fields, collection, accumulatorValues);
         popupBody.replaceChild(newTableFrag, oldTableFrag);
     }
 
