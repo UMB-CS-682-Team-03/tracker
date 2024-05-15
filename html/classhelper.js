@@ -20,10 +20,13 @@
  */
 
 // Let user customize the css file name
-const CSS_FILE_NAME = "@@file/classhelper.css";
+const CSS_STYLESHEET_FILE_NAME = "@@file/classhelper.css";
 
 const CLASSHELPER_TAG_NAME = "roundup-classhelper";
 const CLASSHELPER_ATTRIBUTE_SEARCH_WITH = "data-search-with";
+const CLASSHELPER_POPUP_FEATURES = (width, height) => `popup=yes,width=${width},height=${height}`;
+const CLASSHELPER_POPUP_URL = "about:blank";
+const CLASSHELPER_POPUP_TARGET = "_blank";
 
 const ALTERNATIVE_DROPDOWN_PATHNAMES = {
     "roles": "/rest/roles"
@@ -102,15 +105,15 @@ class ClassHelper extends HTMLElement {
     /** @type {HelpUrlProps} */
     helpurlProps = null;
 
+    /** 
+ * The qualified domain name with protocol and port(if any)
+ * with the tracker name if any.
+ * eg. http://localhost:8080/demo or https://demo.roundup-tracker.org
+ * @type {string} */
+    trackerBaseURL = null;
+
     /** no-op function */
     preventDefault = e => e.preventDefault();
-
-    /** 
-     * The qualified domain name with protocol and port(if any)
-     * with the tracker name if any.
-     * eg. http://localhost:8080/demo or https://demo.roundup-tracker.org
-     * @type {string} */
-    trackerBaseURL = null;
 
     connectedCallback() {
         try {
@@ -801,78 +804,90 @@ class ClassHelper extends HTMLElement {
      * @param {FormData} formData
      * @throws {Error} when fetching or parsing data from roundup rest api fails
      */
-    async openPopUp(apiURL, props, preSelectedValues, formData) {
-        if (!preSelectedValues) {
-            // Find preselected values
-            const input = document.getElementsByName(props.formProperty).item(0);
-            if (input.value) {
-                preSelectedValues = input.value.split(',');
-            } else {
-                preSelectedValues = [];
-            }
-        }
+    async openPopUp(apiURL, props) {
 
-        const popupFeatures = `popup=yes,width=${props.width},height=${props.height}`;
-        this.popupRef = window.open("about:blank", "_blank", popupFeatures);
-
+        /** @type {Response} */
         let resp;
+        /** @type {any} */
+        let collection;
+        /** @type {string} */
+        let prevPageURL;
+        /** @type {string} */
+        let nextPageURL;
+        /** @type {string[]} */
+        let preSelectedValues = [];
+
         try {
             resp = await fetch(apiURL);
         } catch (error) {
-            // Show message fail to load data
-            throw new Error("error fetching data from roundup rest api");
+            let message = `Error fetching data from roundup rest api`;
+            message += `url: ${apiURL.toString()}\n`;
+            if (resp?.status) {
+                message += `response status: ${resp.status}\n`;
+            }
+            throw new Error(message, { cause: error });
         }
 
-        let json;
         try {
-            json = await resp.json();
+            const json = await resp.json();
+            collection = json.data.collection;
+
+            const links = json.data["@links"];
+            if (links?.prev?.length > 0) {
+                prevPageURL = links.prev[0].uri;
+            }
+            if (links?.next.length > 0) {
+                nextPageURL = links.next[0].uri;
+            }
         } catch (error) {
-            // Show message fail to parse json
-            throw new Error("error parsing json from roundup rest api");
+            let message = "Error parsing json from roundup rest api\n";
+            message += `url: ${apiURL.toString()}\n`;
+            message += `response status: ${resp.status}`;
+            throw new Error(message, { cause: error });
         }
 
-        const data = json.data;
-        const links = json.data["@links"];
-
-        let prevPageURL, nextPageURL;
-
-        if (links.prev && links.prev.length > 0) {
-            prevPageURL = links.prev[0].uri;
-        }
-        if (links.next && links.next.length > 0) {
-            nextPageURL = links.next[0].uri;
+        if (props.formProperty) {
+            // Find preselected values
+            const input = document.getElementsByName(props.formProperty).item(0);
+            if (input?.value) {
+                preSelectedValues = input.value.split(',');
+            }
         }
 
-        const popupDocument = this.popupRef.document;
-        const popupBody = popupDocument.body;
-        const popupHead = popupDocument.head;
+        const popupFeatures = CLASSHELPER_POPUP_FEATURES(props.width, props.height);
+        this.popupRef = window.open(CLASSHELPER_POPUP_URL, CLASSHELPER_POPUP_TARGET, popupFeatures);
 
-        // Add external classhelper css to head
-        const css = popupDocument.createElement("link");
-        css.rel = "stylesheet";
-        css.type = "text/css";
-        css.href = this.trackerBaseURL + '/' + CSS_FILE_NAME;
-        popupHead.appendChild(css);
+        this.popupRef.addEventListener("load", (event) => {
+            const doc = event.target;
+            const body = doc.body;
 
-        popupBody.classList.add("flex-container");
+            // Add external classhelper stylesheet to head
+            const styleSheet = doc.createElement("link");
+            styleSheet.rel = "stylesheet";
+            styleSheet.type = "text/css";
+            styleSheet.href = this.trackerBaseURL + '/' + CSS_STYLESHEET_FILE_NAME;
+            doc.head.appendChild(styleSheet);
 
-        if (this.dataset.searchWith) {
-            const searchFrag = this.getSearchFragment(formData);
-            popupBody.appendChild(searchFrag);
-        }
+            body.classList.add("flex-container");
 
-        const paginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize, data.collection.length);
-        popupBody.appendChild(paginationFrag);
+            if (this.dataset.searchWith) {
+                const searchFrag = this.getSearchFragment(null);
+                body.appendChild(searchFrag);
+            }
 
-        const tableFrag = this.getTableFragment(props.fields, data.collection, preSelectedValues);
-        popupBody.appendChild(tableFrag);
+            const paginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize, collection.length);
+            body.appendChild(paginationFrag);
 
-        const separator = popupDocument.createElement("div");
-        separator.classList.add("separator");
-        popupBody.appendChild(separator);
+            const tableFrag = this.getTableFragment(props.fields, collection, preSelectedValues);
+            body.appendChild(tableFrag);
 
-        const accumulatorFrag = this.getAccumulatorFragment(preSelectedValues);
-        popupBody.appendChild(accumulatorFrag);
+            const separator = doc.createElement("div");
+            separator.classList.add("separator");
+            body.appendChild(separator);
+
+            const accumulatorFrag = this.getAccumulatorFragment(preSelectedValues);
+            body.appendChild(accumulatorFrag);
+        });
 
         this.popupRef.document.addEventListener("keydown", (e) => {
             if (e.target.tagName == "TR") {
