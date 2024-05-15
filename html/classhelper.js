@@ -895,6 +895,16 @@ class ClassHelper extends HTMLElement {
             const doc = event.target;
             const body = doc.body;
 
+            const itemDesignator = window.location.pathname.split("/").at(-1);
+            let title = `${itemDesignator} - Classhelper`;
+
+            if (props.formProperty) {
+                const label = document.getElementsByName(props.formProperty).item(0).parentElement.previousElementSibling;
+                title = label.textContent + " - " + title;
+            }
+
+            doc.title = title;
+
             // Add external classhelper stylesheet to head
             const styleSheet = doc.createElement("link");
             styleSheet.rel = "stylesheet";
