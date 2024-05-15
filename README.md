@@ -167,7 +167,14 @@ In addition to keyboard navigation, the `<roundup-classhelper>` component can be
 2. ** GeckoDriver Installation**: 
 	pip install geckodriver==0.0.1
 
-# Run the test_suite
 
-python test_classhelper.py
+#To run the code in a Headless Environment:
+	Set "HEADLESS = TRUE " in line 12.
+
+#To run the code without Headless:
+	Set " HEADLESS = FALSE"  in line 12. 
+
+
+# Run the test_suite
+	python test_classhelper.py
 ```
