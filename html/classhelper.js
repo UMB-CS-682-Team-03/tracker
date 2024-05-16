@@ -310,7 +310,7 @@ class ClassHelper extends HTMLElement {
             throw new Error(message);
         }
 
-        ClassHelper.translations = translations;
+        ClassHelper.translations = json;
     }
 
     async fetchDropdownsData() {
