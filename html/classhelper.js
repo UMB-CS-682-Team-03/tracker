@@ -910,7 +910,7 @@ class ClassHelper extends HTMLElement {
         this.popupRef = window.open(CLASSHELPER_POPUP_URL, CLASSHELPER_POPUP_TARGET, popupFeatures);
 
         if (this.popupRef == null) {
-            throw new Error("Failed to open popup window");
+            throw new Error("Browser Failed to open Popup Window");
         }
 
         // Create the popup root level page
@@ -941,7 +941,7 @@ class ClassHelper extends HTMLElement {
         head.appendChild(styleSheet);
 
         if (this.dataset.searchWith) {
-            const searchFrag = this.getSearchFragment();
+            const searchFrag = this.getSearchFragment(null);
             body.appendChild(searchFrag);
         }
 
