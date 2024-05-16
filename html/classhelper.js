@@ -178,6 +178,14 @@ class ClassHelper extends HTMLElement {
                 });
         };
 
+        const handlePopupReadyEvent = (event) => {
+            // we get a document Fragment in event.detail we replace it with the root
+            // replaceChild method consumes the documentFragment content, subsequent calls will be no-op.
+            if (e.detail.childElementCount === 1) {
+                this.popupRef.document.replaceChild(event.detail, this.popupRef.document.documentElement);
+            }
+        }
+
         const handleNextPageEvent = (event) => {
             this.pageChange(event.detail.value, this.helpurlProps)
                 .catch(error => {
@@ -233,6 +241,7 @@ class ClassHelper extends HTMLElement {
         }
 
         this.addEventListener("click", handleClickEvent);
+        this.addEventListener("popupReady", handlePopupReadyEvent);
         this.addEventListener("prevPage", handlePrevPageEvent);
         this.addEventListener("nextPage", handleNextPageEvent);
         this.addEventListener("valueSelected", handleValueSelectedEvent);
@@ -303,7 +312,7 @@ class ClassHelper extends HTMLElement {
             throw new Error(message);
         }
 
-        ClassHelper.translations = translations;
+        ClassHelper.translations = json;
     }
 
     async fetchDropdownsData() {
@@ -904,49 +913,70 @@ class ClassHelper extends HTMLElement {
             throw new Error("Browser Failed to open Popup Window");
         }
 
-        this.popupRef.addEventListener("load", (event) => {
-            const doc = event.target;
-            const body = doc.body;
+        // Create the popup root level page
+        const page = document.createDocumentFragment();
+        const html = document.createElement("html");
+        const head = document.createElement("head");
+        const body = document.createElement("body");
 
-            const itemDesignator = window.location.pathname.split("/").at(-1);
-            let title = `${itemDesignator} - Classhelper`;
+        body.classList.add("flex-container");
 
-            if (props.formProperty) {
-                const label = document.getElementsByName(props.formProperty).item(0).parentElement.previousElementSibling;
-                title = label.textContent + " - " + title;
-            }
+        const itemDesignator = window.location.pathname.split("/").at(-1);
+        let titleText = `${itemDesignator} - Classhelper`;
+        if (props.formName) {
+            // main window lookup for the label of the form property
+            const label = document.getElementsByName(props.formProperty).item(0).parentElement.previousElementSibling;
+            titleText = label.textContent + " - " + titleText;
+        }
 
-            doc.title = title;
+        const titleTag = document.createElement("title");
+        titleTag.textContent = titleText;
 
-            // Add external classhelper stylesheet to head
-            const styleSheet = doc.createElement("link");
-            styleSheet.rel = "stylesheet";
-            styleSheet.type = "text/css";
-            styleSheet.href = this.trackerBaseURL + '/' + CSS_STYLESHEET_FILE_NAME;
-            doc.head.appendChild(styleSheet);
+        const styleSheet = document.createElement("link");
+        styleSheet.rel = "stylesheet";
+        styleSheet.type = "text/css";
+        styleSheet.href = this.trackerBaseURL + '/' + CSS_STYLESHEET_FILE_NAME;
 
-            body.classList.add("flex-container");
+        head.appendChild(titleTag);
+        head.appendChild(styleSheet);
 
-            if (this.dataset.searchWith) {
-                const searchFrag = this.getSearchFragment(null);
-                body.appendChild(searchFrag);
-            }
+        if (this.dataset.searchWith) {
+            const searchFrag = this.getSearchFragment(null);
+            body.appendChild(searchFrag);
+        }
 
-            const paginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize, collection.length);
-            body.appendChild(paginationFrag);
+        const paginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize, collection.length);
+        body.appendChild(paginationFrag);
 
-            const tableFrag = this.getTableFragment(props.fields, collection, preSelectedValues, !!props.formProperty);
-            body.appendChild(tableFrag);
+        const tableFrag = this.getTableFragment(props.fields, collection, preSelectedValues, !!props.formProperty);
+        body.appendChild(tableFrag);
 
-            const separator = doc.createElement("div");
-            separator.classList.add("separator");
-            body.appendChild(separator);
+        const separator = document.createElement("div");
+        separator.classList.add("separator");
+        body.appendChild(separator);
 
-            if (props.formProperty) {
-                const accumulatorFrag = this.getAccumulatorFragment(preSelectedValues);
-                body.appendChild(accumulatorFrag);
-            }
-        });
+        if (props.formProperty) {
+            const accumulatorFrag = this.getAccumulatorFragment(preSelectedValues);
+            body.appendChild(accumulatorFrag);
+        }
+
+        html.appendChild(head);
+        html.appendChild(body);
+        page.appendChild(html);
+
+        const dispatchPopupReady = () => this.dispatchEvent(new CustomEvent("popupReady", { detail: page }));
+
+        // Wait for the popup window to load, onload fire popupReady event on the classhelper
+        this.popupRef.addEventListener("load", dispatchPopupReady);
+
+        // If load event was already fired way before the event listener was attached
+        // we need to trigger it manually if popupRef is readyState complete
+        if (this.popupRef.document.readyState === "complete") {
+            dispatchPopupReady();
+            // if we did successfully trigger the event, we can remove the event listener
+            // else wait for it to be removed with closing of popup window, this cleaning up closure
+            this.popupRef.removeEventListener("load", dispatchPopupReady);
+        }
 
         this.popupRef.addEventListener("keydown", (e) => {
             if (e.key === "ArrowDown") {
