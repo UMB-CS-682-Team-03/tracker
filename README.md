@@ -35,7 +35,7 @@ There are three main parts of the roundup-classhelper component:
 * **Select/Info Table Section**: This section displays the search results or a list of available items. If a search section is present, it will show the items matching the search criteria. If no search section is available, it will display all available items. This section may include pagination controls to navigate through large datasets. Additionally, it may have a checkbox for selecting items if the `<roundup-classhelper>` is associated with a form field. However, if there is no associated form field (i.e., "info mode"), this section will act as an information box without selection capabilities.
 
    <img src="./doc-assets/image-3.png" alt="Image Title" width="60%">
-
+ 
 * **Accumulator/Submit Section**: This section shows the items selected by the user from the Select/Info Table Section. It serves as an accumulator, allowing users to review and confirm their selections before submitting or updating the associated form field. If the `<roundup-classhelper>` is in "info mode" (without an associated form field), this section may be absent, as there are no items to accumulate or submit.
    <img src="./doc-assets/image-4.png" alt="Image Title" width="60%">
 
@@ -49,11 +49,16 @@ The `<roundup-classhelper>` is designed to be fully accessible and navigable usi
 * **Search Section**: If present, users can type their search query directly into the search input field using the keyboard.
 
 * **Select/Info Table Section**:
-   * Users can navigate through the list of items using the Up and Down arrow keys.
-   * To select/deselect an item, users can press the Space key when an item is focused.
-   * If pagination controls are present, users can navigate to the next or previous page using the appropriate links or buttons, which should be accessible via the Tab key.
+   * Users can navigate through the list of items using the `Up` and `Down` arrow keys.
+   * To select/deselect an item, users can press the `Space` key when an item is focused.
+   * If pagination controls are present, users can navigate to the `next` or `previous` page using the appropriate links or buttons, which should be accessible via the `Tab` key.
+   * Users can also use the `<` and `>` keys to focus on the `Prev` and `Next` buttons for navigating to the previous and next pages, respectively.
 
-
+* **Accumulator/Submit Section**:
+   * Users can navigate to the `Apply` or `Cancel` buttons using the `Tab` key.
+   * To submit or cancel the selected values, users can press the `Enter` key when the respective button is focused.
+   * Users can navigate to `Submit` button, by pressing `Shift + Enter` from anywhere.
+   Enter push makes the thing happen
 
 ### Mouse Usage
 In addition to keyboard navigation, the `<roundup-classhelper>` component can be used with a mouse or other pointing device:
@@ -142,16 +147,46 @@ In addition to keyboard navigation, the `<roundup-classhelper>` component can be
    * In case of errors, the component will display relevant messages to the user.(component will notify the user)
    * For further debugging, users can open the browser console and inspect the results.
 
-   # Roles - Interfaces.py
+   
 
    #### Refreshing `classhelper.css`
-   In case of issues with the `<roundup-classhelper>` component, you can try refreshing the classhelper.css file by following these steps:
-   * Open the `<roundup-classhelper>` popup window.
-   * Press `Ctrl+Shift+R` (or `Cmd+Shift+R` on Mac) to perform a hard refresh of the page.
+   In case of issues with the `<roundup-classhelper>` component, you can try refreshing the `classhelper.css` file by following these steps:
+   * Open your Roundup issue tracker in a web browser.
+   * In the address bar, append `@@file/classhelper.css` to the end of your Roundup URL. For example, if your Roundup URL is `http://example.com/tracker`, the URL you should visit would be `http://example.com/tracker/@@file/classhelper.css`
+   * This will open the `classhelper.css` file in your browser.
+   * To perform a hard refresh of the page, which forces the browser to reload the file and associated resources from the server, press `Ctrl+Shift+R` (on Windows and Linux) or `Cmd+Shift+R` (on macOS).
 
-   This will force the browser to reload the classhelper.js file and any other associated resources, potentially resolving any issues caused by cached or outdated files.
+   This will force the browser to reload the classhelper.css file and any other associated resources, potentially resolving any issues caused by cached or outdated files.
 
+## Adding Roles
+   * If you want to enable the display of roles in the `<roundup-classhelper>` component, you'll need to have an `interfaces.py` file with the following code:
 
+      ```python
+      from roundup.rest import Routing, RestfulInstance,  _data_decorator
+
+      class RestfulInstance:
+
+      @Routing.route("/roles", 'GET')
+      @_data_decorator
+      def get_roles(self, input):
+        """Return all defined roles. The User class property
+           roles is a string but simulate it as a MultiLink
+           to an actual Roles class.
+        """
+        return 200, {"collection": [ {"id": rolename, "name": rolename}
+                  for rolename in list(self.db.security.role.keys())]}
+      ```
+
+      By including this code in the `interfaces.py` file, you enable the `<roundup-classhelper>` component to handle roles effectively, allowing users to search, filter, and select roles within the component.
+
+# Installing and Setup
+Copy the following files into your Roundup instance `html` directory:
+
+- `classhelper.css` ([[GitHub file link](https://github.com/UMB-CS-682-Team-03/tracker/blob/main/html/classhelper.css)])
+- `classhelper.js` ([[GitHub file link](https://github.com/UMB-CS-682-Team-03/tracker/blob/main/html/classhelper.js)])
+
+After copying these files, you can use the `<roundup-classhelper>` component in your Roundup templates.
+   
 
 
 # Running the Test Suite
@@ -176,6 +211,6 @@ In addition to keyboard navigation, the `<roundup-classhelper>` component can be
 	Set " HEADLESS = FALSE"  in line 12. 
 
 
-### Run the test_suite
+### Run the test suite
 	python test_classhelper.py
 
