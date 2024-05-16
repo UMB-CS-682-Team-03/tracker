@@ -180,8 +180,10 @@ class ClassHelper extends HTMLElement {
 
         const handlePopupReadyEvent = (event) => {
             // we get a document Fragment in event.detail we replace it with the root
-            // Assuming that browser implementors are smart enough to not replace the same document
-            this.popupRef.document.replaceChild(event.detail, this.popupRef.document.documentElement);
+            // replaceChild method consumes the documentFragment content, subsequent calls will be no-op.
+            if (e.detail.childElementCount === 1) {
+                this.popupRef.document.replaceChild(event.detail, this.popupRef.document.documentElement);
+            }
         }
 
         const handleNextPageEvent = (event) => {
@@ -896,21 +898,20 @@ class ClassHelper extends HTMLElement {
             nextPageURL = links.next[0].uri;
         }
 
-        const itemDesignator = window.location.pathname.split("/").at(-1);
-        let title = `${itemDesignator} - Classhelper`;
-
         if (props.formProperty) {
             // Find preselected values
             const input = document.getElementsByName(props.formProperty).item(0);
             if (input?.value) {
                 preSelectedValues = input.value.split(',');
             }
-            const label = document.getElementsByName(props.formProperty).item(0).parentElement.previousElementSibling;
-            title = label.textContent + " - " + title;
         }
 
         const popupFeatures = CLASSHELPER_POPUP_FEATURES(props.width, props.height);
         this.popupRef = window.open(CLASSHELPER_POPUP_URL, CLASSHELPER_POPUP_TARGET, popupFeatures);
+
+        if (this.popupRef == null) {
+            throw new Error("Failed to open popup window");
+        }
 
         // Create the popup root level page
         const page = document.createDocumentFragment();
@@ -920,8 +921,16 @@ class ClassHelper extends HTMLElement {
 
         body.classList.add("flex-container");
 
+        const itemDesignator = window.location.pathname.split("/").at(-1);
+        let titleText = `${itemDesignator} - Classhelper`;
+        if (props.formName) {
+            // main window lookup for the label of the form property
+            const label = document.getElementsByName(props.formProperty).item(0).parentElement.previousElementSibling;
+            titleText = label.textContent + " - " + titleText;
+        }
+
         const titleTag = document.createElement("title");
-        titleTag.textContent = title;
+        titleTag.textContent = titleText;
 
         const styleSheet = document.createElement("link");
         styleSheet.rel = "stylesheet";
@@ -937,14 +946,13 @@ class ClassHelper extends HTMLElement {
         }
 
         const paginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize, collection.length);
+        body.appendChild(paginationFrag);
+
+        const tableFrag = this.getTableFragment(props.fields, collection, preSelectedValues, !!props.formProperty);
+        body.appendChild(tableFrag);
 
         const separator = document.createElement("div");
         separator.classList.add("separator");
-
-        const tableFrag = this.getTableFragment(props.fields, collection, preSelectedValues, !!props.formProperty);
-
-        body.appendChild(paginationFrag);
-        body.appendChild(tableFrag);
         body.appendChild(separator);
 
         if (props.formProperty) {
@@ -956,21 +964,18 @@ class ClassHelper extends HTMLElement {
         html.appendChild(body);
         page.appendChild(html);
 
-        const popupReadyEvent = new CustomEvent("popupReady", { detail: page });
-
-        if (this.popupRef == null) {
-            throw new Error("Failed to open popup window");
-        }
+        const dispatchPopupReady = () => this.dispatchEvent(new CustomEvent("popupReady", { detail: page }));
 
         // Wait for the popup window to load, onload fire popupReady event on the classhelper
-        this.popupRef.addEventListener("load", () => {
-            this.dispatchEvent(popupReadyEvent);
-        });
+        this.popupRef.addEventListener("load", dispatchPopupReady);
 
         // If load event was already fired way before the event listener was attached
         // we need to trigger it manually if popupRef is readyState complete
         if (this.popupRef.document.readyState === "complete") {
-            this.dispatchEvent(popupReadyEvent);
+            dispatchPopupReady();
+            // if we did successfully trigger the event, we can remove the event listener
+            // else wait for it to be removed with closing of popup window, this cleaning up closure
+            this.popupRef.removeEventListener("load", dispatchPopupReady);
         }
 
         this.popupRef.addEventListener("keydown", (e) => {
