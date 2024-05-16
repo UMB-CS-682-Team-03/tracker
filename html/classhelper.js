@@ -178,6 +178,12 @@ class ClassHelper extends HTMLElement {
                 });
         };
 
+        const handlePopupReadyEvent = (event) => {
+            // we get a document Fragment in event.detail we replace it with the root
+            // Assuming that browser implementors are smart enough to not replace the same document
+            this.popupRef.document.replaceChild(event.detail, this.popupRef.document.documentElement);
+        }
+
         const handleNextPageEvent = (event) => {
             this.pageChange(event.detail.value, this.helpurlProps)
                 .catch(error => {
@@ -233,6 +239,7 @@ class ClassHelper extends HTMLElement {
         }
 
         this.addEventListener("click", handleClickEvent);
+        this.addEventListener("popupReady", handlePopupReadyEvent);
         this.addEventListener("prevPage", handlePrevPageEvent);
         this.addEventListener("nextPage", handleNextPageEvent);
         this.addEventListener("valueSelected", handleValueSelectedEvent);
@@ -889,64 +896,82 @@ class ClassHelper extends HTMLElement {
             nextPageURL = links.next[0].uri;
         }
 
+        const itemDesignator = window.location.pathname.split("/").at(-1);
+        let title = `${itemDesignator} - Classhelper`;
+
         if (props.formProperty) {
             // Find preselected values
             const input = document.getElementsByName(props.formProperty).item(0);
             if (input?.value) {
                 preSelectedValues = input.value.split(',');
             }
+            const label = document.getElementsByName(props.formProperty).item(0).parentElement.previousElementSibling;
+            title = label.textContent + " - " + title;
         }
 
         const popupFeatures = CLASSHELPER_POPUP_FEATURES(props.width, props.height);
         this.popupRef = window.open(CLASSHELPER_POPUP_URL, CLASSHELPER_POPUP_TARGET, popupFeatures);
 
-        if (this.popupRef == null) {
-            throw new Error("Browser Failed to open Popup Window");
+        // Create the popup root level page
+        const page = document.createDocumentFragment();
+        const html = document.createElement("html");
+        const head = document.createElement("head");
+        const body = document.createElement("body");
+
+        body.classList.add("flex-container");
+
+        const titleTag = document.createElement("title");
+        titleTag.textContent = title;
+
+        const styleSheet = document.createElement("link");
+        styleSheet.rel = "stylesheet";
+        styleSheet.type = "text/css";
+        styleSheet.href = this.trackerBaseURL + '/' + CSS_STYLESHEET_FILE_NAME;
+
+        head.appendChild(titleTag);
+        head.appendChild(styleSheet);
+
+        if (this.dataset.searchWith) {
+            const searchFrag = this.getSearchFragment();
+            body.appendChild(searchFrag);
         }
 
-        this.popupRef.addEventListener("load", (event) => {
-            const doc = event.target;
-            const body = doc.body;
+        const paginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize, collection.length);
 
-            const itemDesignator = window.location.pathname.split("/").at(-1);
-            let title = `${itemDesignator} - Classhelper`;
+        const separator = document.createElement("div");
+        separator.classList.add("separator");
 
-            if (props.formProperty) {
-                const label = document.getElementsByName(props.formProperty).item(0).parentElement.previousElementSibling;
-                title = label.textContent + " - " + title;
-            }
+        const tableFrag = this.getTableFragment(props.fields, collection, preSelectedValues, !!props.formProperty);
 
-            doc.title = title;
+        body.appendChild(paginationFrag);
+        body.appendChild(tableFrag);
+        body.appendChild(separator);
 
-            // Add external classhelper stylesheet to head
-            const styleSheet = doc.createElement("link");
-            styleSheet.rel = "stylesheet";
-            styleSheet.type = "text/css";
-            styleSheet.href = this.trackerBaseURL + '/' + CSS_STYLESHEET_FILE_NAME;
-            doc.head.appendChild(styleSheet);
+        if (props.formProperty) {
+            const accumulatorFrag = this.getAccumulatorFragment(preSelectedValues);
+            body.appendChild(accumulatorFrag);
+        }
 
-            body.classList.add("flex-container");
+        html.appendChild(head);
+        html.appendChild(body);
+        page.appendChild(html);
 
-            if (this.dataset.searchWith) {
-                const searchFrag = this.getSearchFragment(null);
-                body.appendChild(searchFrag);
-            }
+        const popupReadyEvent = new CustomEvent("popupReady", { detail: page });
 
-            const paginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize, collection.length);
-            body.appendChild(paginationFrag);
+        if (this.popupRef == null) {
+            throw new Error("Failed to open popup window");
+        }
 
-            const tableFrag = this.getTableFragment(props.fields, collection, preSelectedValues, !!props.formProperty);
-            body.appendChild(tableFrag);
-
-            const separator = doc.createElement("div");
-            separator.classList.add("separator");
-            body.appendChild(separator);
-
-            if (props.formProperty) {
-                const accumulatorFrag = this.getAccumulatorFragment(preSelectedValues);
-                body.appendChild(accumulatorFrag);
-            }
+        // Wait for the popup window to load, onload fire popupReady event on the classhelper
+        this.popupRef.addEventListener("load", () => {
+            this.dispatchEvent(popupReadyEvent);
         });
+
+        // If load event was already fired way before the event listener was attached
+        // we need to trigger it manually if popupRef is readyState complete
+        if (this.popupRef.document.readyState === "complete") {
+            this.dispatchEvent(popupReadyEvent);
+        }
 
         this.popupRef.addEventListener("keydown", (e) => {
             if (e.key === "ArrowDown") {
