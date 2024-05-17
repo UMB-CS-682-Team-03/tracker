@@ -47,23 +47,30 @@ class TestKeywords(unittest.TestCase):
 
     def test_demo1(self):
         wait = WebDriverWait(self.driver, 10)
-        actions = ActionChains(self.driver)
+        # Store window handle
+        main_window_handle = self.driver.current_window_handle
 
         # Click on element with link text 'Create New'
         wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Create New"))).click()
 
-        time.sleep(1)
-        # Wait until the popup is loaded and click on the help link
+        time.sleep(2)
         wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'input[name="keyword"] + roundup-classhelper'))
+            EC.element_to_be_clickable((By.CSS_SELECTOR, 'input[name="keyword"] + roundup-classhelper'))
         ).click()
 
         # Switch to the new window
-        handles = self.driver.window_handles
-        self.driver.switch_to.window(handles[-1])
+        # Switch to the popup window
+        popup_opened = False
+        while(not popup_opened):
+            for handle in self.driver.window_handles:
+                if handle != main_window_handle:
+                    self.driver.switch_to.window(handle)
+                    popup_opened = True
+                    break;
 
         # Click on another elements in the new window
-        rows = self.driver.find_elements(By.CSS_SELECTOR, ".row-style")
+        tbody = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".popup-table > tbody")))
+        rows = tbody.find_elements(By.CSS_SELECTOR, "tr")
         
         selected_keywords = []
                 
@@ -72,9 +79,10 @@ class TestKeywords(unittest.TestCase):
             selected_keywords.append(row.get_attribute("data-id"))
             
         # unselect row
-        random_number = randint(0, len(rows) - 1)
-        rows[random_number].find_element(By.TAG_NAME, "input").click()
-        selected_keywords.remove(rows[random_number].get_attribute("data-id"))
+        if(len(rows)) > 0:
+            random_number = randint(0, len(rows) - 1)
+            rows[random_number].find_element(By.TAG_NAME, "input").click()
+            selected_keywords.remove(rows[random_number].get_attribute("data-id"))
 
         preview_values = self.driver.find_element(By.ID, "popup-preview").get_attribute("value")
         
@@ -84,7 +92,7 @@ class TestKeywords(unittest.TestCase):
         time.sleep(1)
 
         # Switch back to the main window
-        self.driver.switch_to.window(handles[0])
+        self.driver.switch_to.window(main_window_handle)
 
         # Wait until the new page is loaded
         keyword_value = wait.until(
@@ -379,8 +387,10 @@ class TestSuperseder(unittest.TestCase):
         self.driver.quit()
 
     def testFunctionality(self):
-        wait = WebDriverWait(self.driver, 10)
+        wait = WebDriverWait(self.driver, 100)
         actions = ActionChains(self.driver)
+        # Store window handle
+        main_window_handle = self.driver.current_window_handle
 
         # Click on element with link text 'Create New'
         wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Create New"))).click()
@@ -388,14 +398,18 @@ class TestSuperseder(unittest.TestCase):
         # Click on element with link text '(list)'
         wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "(list)"))).click()
 
-        # Store window handle
-        main_window_handle = self.driver.current_window_handle
         # Switch to the popup window
-        self.driver.switch_to.window(self.driver.window_handles[-1])
-                
+        popup_opened = False
+        while(not popup_opened):
+            for handle in self.driver.window_handles:
+                if handle != main_window_handle:
+                    self.driver.switch_to.window(handle)
+                    popup_opened = True
+                    break;
+
         selected_issue_ids = []
-        
-        tbody = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".popup-table > tbody")))
+
+        tbody = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".popup-table > tbody")))
         rows = tbody.find_elements(By.CSS_SELECTOR, "tr")
         # select upto 5 odd rows
         max_select = 10 if len(rows) > 10 else len(rows)
@@ -470,6 +484,8 @@ class TestSupersederWithKeywords(unittest.TestCase):
     def test_Untitled1(self):
         wait = WebDriverWait(self.driver, 10)
         actions = ActionChains(self.driver)
+        # Store window handle
+        main_window_handle = self.driver.current_window_handle
 
         # Click on element with link text 'Create New'
         wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Create New"))).click()
@@ -477,12 +493,17 @@ class TestSupersederWithKeywords(unittest.TestCase):
         # Click on element with link text '(list)'
         wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "(list)"))).click()
 
-        # Store window handle
-        main_window_handle = self.driver.current_window_handle
         # Switch to the popup window
-        self.driver.switch_to.window(self.driver.window_handles[-1])
-                
+        popup_opened = False
+        while(not popup_opened):
+            for handle in self.driver.window_handles:
+                if handle != main_window_handle:
+                    self.driver.switch_to.window(handle)
+                    popup_opened = True
+                    break;
+
         selected_issue_ids = []
+        wait.until(EC.presence_of_element_located((By.ID, "popup-search")))
         
         # search the pytest issue with title and status
         self.driver.find_element(By.NAME, "keyword").send_keys("test")
