@@ -181,7 +181,7 @@ class ClassHelper extends HTMLElement {
         const handlePopupReadyEvent = (event) => {
             // we get a document Fragment in event.detail we replace it with the root
             // replaceChild method consumes the documentFragment content, subsequent calls will be no-op.
-            if (e.detail.childElementCount === 1) {
+            if (event.detail.childElementCount === 1) {
                 this.popupRef.document.replaceChild(event.detail, this.popupRef.document.documentElement);
             }
         }

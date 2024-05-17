@@ -3,97 +3,96 @@ import time
 import unittest
 from selenium.webdriver.common.keys import Keys
 from selenium import webdriver
-from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
+from random import randint
 
 HEADLESS = False
+TRACKER_URL = "http://localhost:8080/demo/"
 
 class TestKeywords(unittest.TestCase):
     def setUp(self):
-        # Initialize the Firefox driver with headless option setting to True.
         options = webdriver.FirefoxOptions()
         if HEADLESS:
             options.add_argument('--headless')
 
         self.driver = webdriver.Firefox(options=options)
+
+        wait = WebDriverWait(self.driver, 10)
+
+        self.driver.get(TRACKER_URL)
+        self.driver.set_window_size(786, 824)
+        
+        # perform admin login
+        wait.until(EC.element_to_be_clickable((By.NAME, "__login_name"))).click()
+        self.driver.find_element(By.NAME, "__login_name").send_keys("admin")
+        self.driver.find_element(By.NAME, "__login_password").send_keys("admin")
+        self.driver.find_element(By.CSS_SELECTOR, '.userblock input[type="submit"]').click()
+        
+        # check if a keyword "test" exists? if not create new keyword test for testing purpose
+        keyword = "test"
+        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'a[href="keyword?@template=item"]'))).click()
+        input = wait.until(EC.element_to_be_clickable((By.NAME, "name")))
+        
+        keyword_exists = len(self.driver.find_elements(By.LINK_TEXT, keyword)) > 0
+        if(not keyword_exists):
+            input.send_keys(keyword)
+            self.driver.find_element(By.NAME, "submit_button").click()
+
     def tearDown(self):
         # Close the browser
         self.driver.quit()
 
     def test_demo1(self):
-        # Open the URL
-        self.driver.get('http://localhost:8917/demo/')
+        wait = WebDriverWait(self.driver, 10)
+        actions = ActionChains(self.driver)
 
-        # Enter login credentials
-        self.driver.find_element(By.NAME, '__login_name').send_keys('admin')
-        self.driver.find_element(By.NAME, '__login_password').send_keys('admin')
+        # Click on element with link text 'Create New'
+        wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Create New"))).click()
 
-        # Submit the login form
-        self.driver.find_element(By.CSS_SELECTOR, '.userblock > input:nth-child(12)').click()
-
-        # Wait until the 'Create New' link is present and click on it
-        WebDriverWait(self.driver, 10).until(
-            EC.presence_of_element_located((By.LINK_TEXT, 'Create New'))
-        )
-        self.driver.find_element(By.LINK_TEXT, 'Create New').click()
-
+        time.sleep(1)
         # Wait until the popup is loaded and click on the help link
-        WebDriverWait(self.driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'tr:nth-child(4) .classhelp'))
-        )
-        # 
-        self.driver.find_element(By.CSS_SELECTOR, 'tr:nth-child(4) .classhelp').click()
+        wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'input[name="keyword"] + roundup-classhelper'))
+        ).click()
 
         # Switch to the new window
         handles = self.driver.window_handles
         self.driver.switch_to.window(handles[-1])
-        # self.driver.maximize_window()
-        time.sleep(1)
-        # Select keywords
-        self.driver.find_element(By.CSS_SELECTOR, ".rowstyle:nth-child(3) > td").click()
 
-        # Click on another element in the new window
-        self.driver.find_element(By.CSS_SELECTOR, ".rowstyle:nth-child(2) > input").click()
+        # Click on another elements in the new window
+        rows = self.driver.find_elements(By.CSS_SELECTOR, ".row-style")
+        
+        selected_keywords = []
+                
+        for row in rows:
+            row.find_element(By.TAG_NAME, "input").click()
+            selected_keywords.append(row.get_attribute("data-id"))
+            
+        # unselect row
+        random_number = randint(0, len(rows) - 1)
+        rows[random_number].find_element(By.TAG_NAME, "input").click()
+        selected_keywords.remove(rows[random_number].get_attribute("data-id"))
 
-        # Click on another element in the new window
-        self.driver.find_element(By.CSS_SELECTOR, ".rowstyle:nth-child(1) > td").click()
+        preview_values = self.driver.find_element(By.ID, "popup-preview").get_attribute("value")
+        
+        self.assertEqual(preview_values, ",".join(selected_keywords))    
 
-        # Click on another element in the new window
-        self.driver.find_element(By.CSS_SELECTOR, ".rowstyle:nth-child(3) > input").click()
-
-        # Click on another element in the new window
-        self.driver.find_element(By.ID, "popup-preview").click()
-
-        element = self.driver.find_element(By.ID, "popup-preview")
-        webdriver.ActionChains(self.driver).double_click(element).perform()
-
-        # Click on another element in the new window
-        self.driver.find_element(By.ID, "popup-preview").click()
-
-        # Double-click on an element in the new window
-        element = self.driver.find_element(By.ID, "popup-preview")
-        webdriver.ActionChains(self.driver).double_click(element).perform()
-
-        # Click on another element in the new window
-        self.driver.find_element(By.ID, "popup-preview").click()
-
-        # Click on another element in the new window
-        self.driver.find_element(By.CSS_SELECTOR, ".acc-apply").click()
+        self.driver.find_element(By.CSS_SELECTOR, ".popup-apply").click()
         time.sleep(1)
 
         # Switch back to the main window
         self.driver.switch_to.window(handles[0])
 
         # Wait until the new page is loaded
-        WebDriverWait(self.driver, 10).until(
+        keyword_value = wait.until(
             EC.presence_of_element_located((By.NAME, 'keyword'))
-        )
+        ).get_attribute("value")
+        
+        self.assertEqual(keyword_value, ",".join(selected_keywords))
 
-        # Check if the keyword input is filled with the selected keywords
-        keyword_input = self.driver.find_element(By.NAME, "keyword")
         self.driver.find_element(By.NAME, 'keyword').click()
         time.sleep(1)
         print("TestCase 1 -- success")
@@ -118,7 +117,7 @@ class TestNosy(unittest.TestCase):
 
     def test_demo(self):
         # Open the URL
-        self.driver.get('http://localhost:8917/demo/')
+        self.driver.get(TRACKER_URL)
         
         # Enter login credentials
         self.driver.find_element(By.NAME, '__login_name').send_keys('admin')
@@ -143,8 +142,6 @@ class TestNosy(unittest.TestCase):
         # Switch to the new window
         handles = self.driver.window_handles
         self.driver.switch_to.window(handles[-1])
-        # self.driver.maximize_window()
-
         
         # Wait until the new window is loaded
         WebDriverWait(self.driver, 10).until(
@@ -240,7 +237,7 @@ class TestNosy1(unittest.TestCase):
 
     def test_demo1(self):
         # Open the URL
-        self.driver.get('http://localhost:8917/demo/')
+        self.driver.get(TRACKER_URL)
         
         # Enter login credentials
         self.driver.find_element(By.NAME, '__login_name').send_keys('admin')
@@ -358,29 +355,32 @@ class TestSuperseder(unittest.TestCase):
 
         self.driver = webdriver.Firefox(options=options)
 
+        wait = WebDriverWait(self.driver, 10)
+
+        self.driver.get(TRACKER_URL)
+        self.driver.set_window_size(786, 824)
+        
+        # perform admin login
+        wait.until(EC.element_to_be_clickable((By.NAME, "__login_name"))).click()
+        self.driver.find_element(By.NAME, "__login_name").send_keys("admin")
+        self.driver.find_element(By.NAME, "__login_password").send_keys("admin")
+        self.driver.find_element(By.CSS_SELECTOR, '.userblock input[type="submit"]').click()
+
+        # create new issue test for testing purpose
+        wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Create New"))).click()
+        wait.until(EC.element_to_be_clickable((By.NAME, "title"))).send_keys("pytest")
+        self.driver.find_element(By.NAME, "priority").send_keys('c')
+        self.driver.find_element(By.NAME, "status").send_keys('t')
+        self.driver.find_element(By.NAME, "keyword").send_keys('test')
+        self.driver.find_element(By.NAME, "nosy").send_keys('admin')
+        self.driver.find_element(By.NAME, "submit_button").click()
 
     def tearDown(self):
         self.driver.quit()
 
-    def test_Untitled(self):
+    def testFunctionality(self):
         wait = WebDriverWait(self.driver, 10)
-
-        # Open URL /demo/
-        self.driver.get("http://localhost:8917/demo/")
-
-        # Set window size
-        self.driver.set_window_size(786, 824)
-
-        # Click on element with name '__login_name'
-        wait.until(EC.element_to_be_clickable((By.NAME, "__login_name"))).click()
-        # Type "admin" into the element with name attribute equal to "__login_name"
-        self.driver.find_element(By.NAME, "__login_name").send_keys("admin")
-
-        # Type "admin" into the element with name attribute equal to "__login_password"
-        self.driver.find_element(By.NAME, "__login_password").send_keys("admin")
-
-        # Click on the element with CSS selector ".userblock > input:nth-child(12)"
-        self.driver.find_element(By.CSS_SELECTOR, ".userblock > input:nth-child(12)").click()
+        actions = ActionChains(self.driver)
 
         # Click on element with link text 'Create New'
         wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Create New"))).click()
@@ -390,50 +390,44 @@ class TestSuperseder(unittest.TestCase):
 
         # Store window handle
         main_window_handle = self.driver.current_window_handle
-
         # Switch to the popup window
-        for handle in self.driver.window_handles:
-            if handle != main_window_handle:
-                self.driver.switch_to.window(handle)
-
-        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "tr:nth-child(3) > td:nth-child(2)"))).click()
-        self.driver.find_element(By.ID, "title").send_keys("dui")
-        self.driver.find_element(By.CSS_SELECTOR, ".search-button").click()
-        WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".rowstyle:nth-child(2) > td:nth-child(2)")))
-        self.driver.find_element(By.CSS_SELECTOR, ".rowstyle:nth-child(2) > td:nth-child(2)").click()
-        time.sleep(1)
-        # Set status to need-eg
-        self.driver.find_element(By.ID, "status").click()
+        self.driver.switch_to.window(self.driver.window_handles[-1])
+                
+        selected_issue_ids = []
         
-        time.sleep(1)
-        self.driver.find_element(By.ID, "status").send_keys("c",Keys.ENTER)
+        tbody = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".popup-table > tbody")))
+        rows = tbody.find_elements(By.CSS_SELECTOR, "tr")
+        # select upto 5 odd rows
+        max_select = 10 if len(rows) > 10 else len(rows)
+        for i in range(0, max_select, 2):
+            actions.move_to_element(rows[i]).perform()
+            wait.until(EC.element_to_be_clickable(rows[i].find_element(By.TAG_NAME, "td"))).click()
+            selected_issue_ids.append(rows[i].get_attribute("data-id"))
+        
+        # search the pytest issue with title and status
+        self.driver.find_element(By.NAME, "title").send_keys("pytest")
+        self.driver.find_element(By.NAME, "status").send_keys("testing")
+        self.driver.find_element(By.CLASS_NAME, "search-button").click()
+        
+        # Click on the first result
+        row = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "tbody .row-style:nth-child(1)")))
+        row.find_element(By.TAG_NAME, "td").click()
+        selected_issue_ids.append(row.get_attribute("data-id"))
+        
+        # Click on the 'Apply' button
+        self.driver.find_element(By.CSS_SELECTOR, ".popup-apply").click()
+        
+        # Switch back to the main window
+        self.driver.switch_to.window(main_window_handle)
+        
+        # Wait until the new page is loaded
+        superseder = wait.until(EC.presence_of_element_located((By.NAME, 'superseder')))        
+        superseder_value = superseder.get_attribute("value")
+        
+        self.assertEqual(superseder_value, ",".join(selected_issue_ids))
 
-        # self.driver.find_element(By.CSS_SELECTOR, "option[value='need-eg']").click()
-        self.driver.find_element(By.CSS_SELECTOR, ".search-button").click()
-        time.sleep(1)
-        # Click the first result
-
-        WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".rowstyle:nth-child(1) > td:nth-child(2)")))
-        time.sleep(1)
-
-        self.driver.find_element(By.CSS_SELECTOR, ".rowstyle:nth-child(1) > td:nth-child(2)").click()
-        time.sleep(1)
-        # Set keyword to eawe
-        self.driver.find_element(By.ID, "keyword").send_keys("hi",Keys.ENTER)
-        # self.driver.find_element(By.CSS_SELECTOR, "option[value='eawe']").click()
-        self.driver.find_element(By.CSS_SELECTOR, ".search-button").click()
-
-        self.driver.find_element(By.CSS_SELECTOR, ".acc-apply").click()
-        time.sleep(1)
-
-        self.driver.switch_to.window(self.driver.window_handles[0])
-        self.driver.find_element(By.NAME, "superseder").click()
-        time.sleep(1)
-
-        # Step 19: Close the current window
         self.driver.close()
         print("Test Case 4 -- success")
-
 
 
 
@@ -448,29 +442,34 @@ class TestSupersederWithKeywords(unittest.TestCase):
 
         self.driver = webdriver.Firefox(options=options)
 
+        wait = WebDriverWait(self.driver, 10)
+
+        self.driver.get(TRACKER_URL)
+        self.driver.set_window_size(786, 824)
+        
+        # perform admin login
+        wait.until(EC.element_to_be_clickable((By.NAME, "__login_name"))).click()
+        self.driver.find_element(By.NAME, "__login_name").send_keys("admin")
+        self.driver.find_element(By.NAME, "__login_password").send_keys("admin")
+        self.driver.find_element(By.CSS_SELECTOR, '.userblock input[type="submit"]').click()
+        
+        # check if a keyword "test" exists? if not create new keyword test for testing purpose
+        keyword = "test"
+        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'a[href="keyword?@template=item"]'))).click()
+        input = wait.until(EC.element_to_be_clickable((By.NAME, "name")))
+        
+        keyword_exists = len(self.driver.find_elements(By.LINK_TEXT, keyword)) > 0
+        if(not keyword_exists):
+            input.send_keys(keyword)
+            self.driver.find_element(By.NAME, "submit_button").click()
+
 
     def tearDown(self):
         self.driver.quit()
 
     def test_Untitled1(self):
         wait = WebDriverWait(self.driver, 10)
-
-        # Open URL /demo/
-        self.driver.get("http://localhost:8917/demo/")
-
-        # Set window size
-        self.driver.set_window_size(786, 824)
-
-        # Click on element with name '__login_name'
-        wait.until(EC.element_to_be_clickable((By.NAME, "__login_name"))).click()
-        # Type "admin" into the element with name attribute equal to "__login_name"
-        self.driver.find_element(By.NAME, "__login_name").send_keys("admin")
-
-        # Type "admin" into the element with name attribute equal to "__login_password"
-        self.driver.find_element(By.NAME, "__login_password").send_keys("admin")
-
-        # Click on the element with CSS selector ".userblock > input:nth-child(12)"
-        self.driver.find_element(By.CSS_SELECTOR, ".userblock > input:nth-child(12)").click()
+        actions = ActionChains(self.driver)
 
         # Click on element with link text 'Create New'
         wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Create New"))).click()
@@ -480,65 +479,38 @@ class TestSupersederWithKeywords(unittest.TestCase):
 
         # Store window handle
         main_window_handle = self.driver.current_window_handle
-
         # Switch to the popup window
-        for handle in self.driver.window_handles:
-            if handle != main_window_handle:
-                self.driver.switch_to.window(handle)
+        self.driver.switch_to.window(self.driver.window_handles[-1])
+                
+        selected_issue_ids = []
+        
+        # search the pytest issue with title and status
+        self.driver.find_element(By.NAME, "keyword").send_keys("test")
+        self.driver.find_element(By.CLASS_NAME, "search-button").click()
+
+        tbody = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".popup-table > tbody")))
+        rows = tbody.find_elements(By.CSS_SELECTOR, "tr")
+        # select upto 5 even rows
+        max_select = 10 if len(rows) > 10 else len(rows)
+        for i in range(1, max_select, 2):
+            actions.move_to_element(rows[i]).perform()
+            wait.until(EC.element_to_be_clickable(rows[i].find_element(By.TAG_NAME, "td"))).click()
+            selected_issue_ids.append(rows[i].get_attribute("data-id"))
+        
+        # Click on the 'Apply' button
+        self.driver.find_element(By.CSS_SELECTOR, ".popup-apply").click()
+        
+        # Switch back to the main window
+        self.driver.switch_to.window(main_window_handle)
+        
+        # Wait until the new page is loaded
+        superseder = wait.until(EC.presence_of_element_located((By.NAME, 'superseder')))        
+        superseder_value = superseder.get_attribute("value")
+        
+        self.assertEqual(superseder_value, ",".join(selected_issue_ids))
 
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "tr:nth-child(3) > td:nth-child(2)"))).click()
 
-        self.driver.find_element(By.ID, "title").click()
-        self.driver.find_element(By.ID, "title").send_keys("dui", Keys.ENTER)
-        time.sleep(1)
-        self.driver.find_element(By.ID, "title").send_keys("\n")
-        self.driver.find_element(By.CSS_SELECTOR, ".rowstyle:nth-child(1) > td:nth-child(2)").click()
-
-        time.sleep(1)
-        self.driver.find_element(By.ID, "status").click()
-
-        # Use the Select class to work with dropdowns
-        status_dropdown = Select(self.driver.find_element(By.ID, "status"))
-
-        # Use the select_by_visible_text method to select "chatting"
-        status_dropdown.select_by_visible_text("chatting")
-
-        # Press Enter to select the "chatting" option
-        self.driver.find_element(By.ID, "status").send_keys(Keys.ENTER)
-        # self.driver.find_element(By.ID, "status").click()
-        time.sleep(1)
-        # self.driver.find_element(By.ID, "status").send_keys("label=chatting",Keys.ENTER) 
-        time.sleep(1)   
-        self.driver.find_element(By.CSS_SELECTOR, ".search-button").click()
-        time.sleep(1)
-        self.driver.find_element(By.CSS_SELECTOR, ".rowstyle:nth-child(3) > td:nth-child(2)").click()
-        self.driver.find_element(By.ID, "keyword").click()
-        time.sleep(1)
-        status_dropdown = Select(self.driver.find_element(By.ID, "keyword"))
-
-        # self.driver.find_element(By.ID, "keyword").send_keys("label=hey")
-        status_dropdown.select_by_visible_text("hey")
-
-        # Press Enter to select the "chatting" option
-        self.driver.find_element(By.ID, "keyword").send_keys(Keys.ENTER)
-        # self.driver.find_element(By.ID, "status").click()
-        time.sleep(1)
-        # self.driver.find_element(By.ID, "status").send_keys("label=chatting",Keys.ENTER) 
-        time.sleep(1)   
-        self.driver.find_element(By.CSS_SELECTOR, ".search-button").click()
-
-        # self.driver.find_element(By.CSS_SELECTOR, ".search-button").click()
-        time.sleep(1)
-        self.driver.find_element(By.CSS_SELECTOR, ".acc-apply").click()
-        time.sleep(1)
-        self.driver.switch_to.window(self.driver.window_handles[0])
-        self.driver.find_element(By.NAME, "superseder").click()
-        time.sleep(1)
-
-        # Step 18: Click on element with name 'superseder'
-        wait.until(EC.element_to_be_clickable((By.NAME, "superseder"))).click()
-        time.sleep(1)
-        # Step 19: Close the current window
         self.driver.close()
         print("Test Case 5 -- success")
 
@@ -558,7 +530,7 @@ class TestFallbackMechanism(unittest.TestCase):
         wait = WebDriverWait(self.driver, 10)
 
         # Open URL /demo/
-        self.driver.get("http://localhost:8917/demo/")
+        self.driver.get(TRACKER_URL)
 
         # Set window size
         self.driver.set_window_size(786, 824)
@@ -585,15 +557,16 @@ class TestFallbackMechanism(unittest.TestCase):
 
         # Click on element with link text '(list)'
         wait.until(EC.presence_of_element_located((By.LINK_TEXT, "(list)"))).click()
-        
-        main_window_handle = self.driver.current_window_handle
 
         # Switch to the popup window
-        for handle in self.driver.window_handles:
-            if handle != main_window_handle:
-                self.driver.switch_to.window(handle)
-        
-        self.assertEqual(self.driver.title, "superseder help - Roundup issue tracker")
+        self.driver.switch_to.window(self.driver.window_handles[-1])
+                
+        frm_help = self.driver.find_element(By.NAME, "frm_help")
+
+        if (frm_help and frm_help.is_displayed()):
+            print("Test Case 6 -- success")
+        else:
+            self.fail("Test Case 6 -- failed")
 
 
 
