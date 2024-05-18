@@ -28,6 +28,8 @@ const CLASSHELPER_POPUP_FEATURES = (width, height) => `popup=yes,width=${width},
 const CLASSHELPER_POPUP_URL = "about:blank";
 const CLASSHELPER_POPUP_TARGET = "_blank";
 
+const CLASSHELPER_TABLE_SELECTION_NONE = "table-selection-none";
+
 const ALTERNATIVE_DROPDOWN_PATHNAMES = {
     "roles": "/rest/roles"
 }
@@ -748,7 +750,9 @@ class ClassHelper extends HTMLElement {
      * @param {Object.<string, any>[]} data 
      * @returns 
      */
-    getTableFragment(headers, data, preSelectedValues, includeCheckbox = true) {
+    getTableFragment(headers, data, preSelectedValues) {
+        let includeCheckbox = !this.popupRef.document.body.classList.contains(CLASSHELPER_TABLE_SELECTION_NONE);
+
         const fragment = document.createDocumentFragment();
 
         const container = document.createElement('div');
@@ -804,26 +808,29 @@ class ClassHelper extends HTMLElement {
             tbody.appendChild(row);
         });
 
-        tbody.addEventListener("click", (e) => {
-            let id, tr;
-            if (e.target.tagName === "INPUT" || e.target.tagName === "TD") {
-                id = e.target.parentElement.dataset.id;
-                tr = e.target.parentElement;
-            } else if (e.target.tagName === "TR") {
-                id = e.target.dataset.id;
-                tr = e.target;
-            }
-
-            if (e.target.tagName !== "INPUT") {
-                tr.children.item(0).checked = !tr.children.item(0).checked;
-            }
-
-            this.dispatchEvent(new CustomEvent("selection", {
-                detail: {
-                    value: id
+        if (includeCheckbox) {
+            tbody.addEventListener("click", (e) => {
+                let id, tr;
+                if (e.target.tagName === "INPUT" || e.target.tagName === "TD") {
+                    id = e.target.parentElement.dataset.id;
+                    tr = e.target.parentElement;
+                } else if (e.target.tagName === "TR") {
+                    id = e.target.dataset.id;
+                    tr = e.target;
                 }
-            }));
-        });
+
+                if (e.target.tagName !== "INPUT") {
+                    tr.children.item(0).checked = !tr.children.item(0).checked;
+                }
+
+                this.dispatchEvent(new CustomEvent("selection", {
+                    detail: {
+                        value: id
+                    }
+                }));
+            });
+
+        }
 
         // Create table footer with the same column values as headers
         const footerRow = document.createElement('tr');
@@ -930,10 +937,14 @@ class ClassHelper extends HTMLElement {
         const body = document.createElement("body");
 
         body.classList.add("flex-container");
+        if (!props.formProperty) {
+            this.popupRef.document.body.classList.add(CLASSHELPER_TABLE_SELECTION_NONE);
+            body.classList.add(CLASSHELPER_TABLE_SELECTION_NONE);
+        }
 
         const itemDesignator = window.location.pathname.split("/").at(-1);
         let titleText = `${itemDesignator} - Classhelper`;
-        if (props.formName) {
+        if (props.formProperty) {
             // main window lookup for the label of the form property
             const label = document.getElementsByName(props.formProperty).item(0).parentElement.previousElementSibling;
             titleText = label.textContent + " - " + titleText;
@@ -958,7 +969,7 @@ class ClassHelper extends HTMLElement {
         const paginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, props.pageIndex, props.pageSize, collection.length);
         body.appendChild(paginationFrag);
 
-        const tableFrag = this.getTableFragment(props.fields, collection, preSelectedValues, !!props.formProperty);
+        const tableFrag = this.getTableFragment(props.fields, collection, preSelectedValues);
         body.appendChild(tableFrag);
 
         const separator = document.createElement("div");
@@ -1124,7 +1135,7 @@ class ClassHelper extends HTMLElement {
         popupBody.replaceChild(newPaginationFrag, oldPaginationFrag);
 
         let oldTableFrag = popupDocument.getElementById("popup-tablediv");
-        let newTableFrag = this.getTableFragment(props.fields, collection, accumulatorValues, !!props.formProperty);
+        let newTableFrag = this.getTableFragment(props.fields, collection, accumulatorValues);
         popupBody.replaceChild(newTableFrag, oldTableFrag);
     }
 
@@ -1252,7 +1263,7 @@ class ClassHelper extends HTMLElement {
 
 
         let oldTableFrag = popupDocument.getElementById("popup-tablediv");
-        let newTableFrag = this.getTableFragment(props.fields, collection, accumulatorValues, !!props.formProperty);
+        let newTableFrag = this.getTableFragment(props.fields, collection, accumulatorValues);
         popupBody.replaceChild(newTableFrag, oldTableFrag);
     }
 
