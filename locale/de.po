@@ -13,23 +13,47 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Poedit-Bookmarks: 75,-1,-1,-1,-1,-1,-1,-1,-1,-1\n"
 
-msgid "Submit"
-msgstr "gehen"
-
-msgid "Next"
+msgid "next"
 msgstr "nächste"
 
-msgid "Prev"
+msgid "prev"
 msgstr "vorherige"
 
-msgid "Apply"
+msgid "apply"
 msgstr "anwenden"
 
-msgid "Cancel"
+msgid "cancel"
 msgstr "stornieren"
 
-msgid "Search"
+msgid "search"
 msgstr "suchen"
 
-msgid "Reset"
+msgid "reset"
 msgstr "zurücksetzen"
+
+msgid "id"
+msgstr "id"
+
+msgid "title"
+msgstr "titel"
+
+msgid "status"
+msgstr "status"
+
+msgid "keyword"
+msgstr "schlagwort"
+
+msgid "username"
+msgstr "nutzername"
+
+msgid "roles"
+msgstr "rollen"
+
+msgid "realname"
+msgstr "echtername"
+
+msgid "address"
+msgstr "adresse"
+
+msgid "name"
+msgstr "name"

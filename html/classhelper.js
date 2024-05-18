@@ -31,6 +31,7 @@ const CLASSHELPER_POPUP_URL = "about:blank";
 const CLASSHELPER_POPUP_TARGET = "_blank";
 
 const CLASSHELPER_TABLE_SELECTION_NONE = "table-selection-none";
+const CLASSHELPER_TRANSLATION_KEYWORDS = ["apply", "cancel", "next", "prev", "search", "reset"];
 
 const ALTERNATIVE_DROPDOWN_PATHNAMES = {
     "roles": "/rest/roles"
@@ -148,12 +149,6 @@ class ClassHelper extends HTMLElement {
         }
 
         const initialRequestURL = ClassHelper.getRestURL(this.trackerBaseURL, this.helpurlProps);
-
-        ClassHelper.fetchTranslations()
-            .catch(error => {
-                console.warn("Classhelper failed in translating.")
-                console.error(error);
-            });
 
         this.fetchDropdownsData()
             .catch(error => {
@@ -280,20 +275,39 @@ class ClassHelper extends HTMLElement {
             return;
         }
 
-        let translations = {
-            "Apply": "Apply",
-            "Cancel": "Cancel",
-            "Next": "Next",
-            "Prev": "Prev",
-            "Search": "Search",
-            "Reset": "Reset"
-        };
-        ClassHelper.translations = translations;
+        const keys = new Set();
+
+        const classhelpers = document.getElementsByTagName(CLASSHELPER_TAG_NAME);
+        for (let classhelper of classhelpers) {
+            if (classhelper.dataset.searchWith) {
+                classhelper.dataset.searchWith
+                    .split(',')
+                    .forEach(param => {
+                        keys.add(param.split("[]")[0]);
+                    });
+            }
+
+            const a = classhelper.querySelector("a");
+            if (a && a.dataset.helpurl) {
+                let searchParams = new URLSearchParams(a.dataset.helpurl.split("?")[1]);
+                let properties = searchParams.get("properties");
+                if (properties) {
+                    properties.split(',').forEach(key => keys.add(key));
+                }
+            }
+        }
+
+        CLASSHELPER_TRANSLATION_KEYWORDS.forEach(key => keys.add(key));
+
+        ClassHelper.translations = {};
+        for (let key of keys) {
+            ClassHelper.translations[key] = key;
+        }
 
         let tracker = window.location.pathname.split('/')[1];
         let url = new URL(window.location.origin + "/" + tracker);
         url.searchParams.append("@template", "translation");
-        url.searchParams.append("properties", Object.keys(translations).join(','));
+        url.searchParams.append("properties", Array.from(keys.values()).join(','));
 
         let resp, json;
 
@@ -321,7 +335,9 @@ class ClassHelper extends HTMLElement {
             throw new Error(message);
         }
 
-        ClassHelper.translations = json;
+        for (let entry of Object.entries(json)) {
+            ClassHelper.translations[entry[0]] = entry[1];
+        }
     }
 
     async fetchDropdownsData() {
@@ -547,7 +563,7 @@ class ClassHelper extends HTMLElement {
             const label = document.createElement("label");
             label.classList.add("search-label"); // Add class for styling
             label.setAttribute("for", param);
-            label.textContent = param + ":";
+            label.textContent = ClassHelper.translations[param] + ":";
 
             let input;
             if (this.dropdownsData[param]) {
@@ -602,7 +618,7 @@ class ClassHelper extends HTMLElement {
         buttonCell.colSpan = 1;
 
         const search = document.createElement("button");
-        search.textContent = ClassHelper.translations["Search"];
+        search.textContent = ClassHelper.translations["search"];
         search.classList.add("search-button"); // Add class for styling
         search.addEventListener("click", (e) => {
             e.preventDefault();
@@ -615,7 +631,7 @@ class ClassHelper extends HTMLElement {
         });
 
         const reset = document.createElement("button");
-        reset.textContent = ClassHelper.translations["Reset"];
+        reset.textContent = ClassHelper.translations["reset"];
         reset.classList.add("reset-button"); // Add class for styling
         reset.addEventListener("click", (e) => {
             e.preventDefault();
@@ -665,7 +681,7 @@ class ClassHelper extends HTMLElement {
 
         const prev = document.createElement("button");
         prev.innerHTML = "<";
-        prev.setAttribute("aria-label", ClassHelper.translations["Prev"]);
+        prev.setAttribute("aria-label", ClassHelper.translations["prev"]);
         prev.setAttribute("disabled", "disabled");
         if (prevUrl) {
             prev.removeAttribute("disabled");
@@ -680,7 +696,7 @@ class ClassHelper extends HTMLElement {
 
         const next = document.createElement("button");
         next.innerHTML = ">";
-        next.setAttribute("aria-label", ClassHelper.translations["Next"]);
+        next.setAttribute("aria-label", ClassHelper.translations["next"]);
         next.setAttribute("disabled", "disabled");
         if (nextUrl) {
             next.removeAttribute("disabled");
@@ -714,7 +730,7 @@ class ClassHelper extends HTMLElement {
         }
 
         const cancel = document.createElement("button");
-        cancel.textContent = ClassHelper.translations["Cancel"];
+        cancel.textContent = ClassHelper.translations["cancel"];
         cancel.addEventListener("click", () => {
             this.dispatchEvent(new CustomEvent("valueSelected", {
                 detail: {
@@ -726,7 +742,7 @@ class ClassHelper extends HTMLElement {
         const apply = document.createElement("button");
         apply.id = "popup-apply";
         apply.classList.add("popup-apply");
-        apply.textContent = ClassHelper.translations["Apply"];
+        apply.textContent = ClassHelper.translations["apply"];
         apply.addEventListener("click", () => {
             this.dispatchEvent(new CustomEvent("valueSelected", {
                 detail: {
@@ -774,7 +790,7 @@ class ClassHelper extends HTMLElement {
 
         headers.forEach(header => {
             const th = document.createElement('th');
-            th.textContent = header;
+            th.textContent = ClassHelper.translations[header];
             headerRow.appendChild(th);
         });
         thead.appendChild(headerRow);
@@ -830,19 +846,7 @@ class ClassHelper extends HTMLElement {
         }
 
         // Create table footer with the same column values as headers
-        const footerRow = document.createElement('tr');
-
-        if (includeCheckbox) {
-            let footThx = document.createElement("th");
-            footThx.textContent = "X";
-            footerRow.appendChild(footThx);
-        }
-
-        headers.forEach(header => {
-            const th = document.createElement('th');
-            th.textContent = header;
-            footerRow.appendChild(th);
-        });
+        const footerRow = headerRow.cloneNode(true);
         tfoot.appendChild(footerRow);
 
         // Assemble the table
@@ -1268,7 +1272,7 @@ function enableClassHelper() {
         return;
     }
 
-    /**@todo - make api call? get 404 then early return? */
+    /** make api call if error then do not register*/
     // http://localhost/demo/rest
 
     fetch("rest")
@@ -1279,6 +1283,11 @@ function enableClassHelper() {
                 return;
             }
             customElements.define(CLASSHELPER_TAG_NAME, ClassHelper);
+            ClassHelper.fetchTranslations()
+            .catch(error => {
+                console.warn("Classhelper failed in translating.")
+                console.error(error);
+            });
         }).catch(err => {
             console.error(err);
         });
