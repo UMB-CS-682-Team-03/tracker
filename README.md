@@ -1,55 +1,3 @@
-# Development Setup
-
-### Clone mercurial repository.
-```shell
-hg clone http://hg.code.sf.net/p/roundup/code roundup
-```
-
-### Make python virtual env and activate it
-```shell
-cd roundup
-python -m venv .
-```
-#### For linux and mac
-```shell
-source bin/activate 
-```
-#### For windows powershell
-```shell
-.\scripts\Activate.ps1
-```
-
-### Install roundup
-```shell
-python -m pip install .
-```
-
-### Clone tracker only repo.
-```shell
-git clone https://github.com/UMB-CS-682-Team-03/tracker.git
-```
-
-### Init the demo tracker with default ./demo
-```shell
-roundup-demo -b sqlite
-```
-
-### Move the files from tracker dir to demo dir
-#### For linux and mac
-```shell
-cp -r ./tracker/**/* ./demo
-cp -r ./tracker/.git ./tracker/.gitignore ./demo
-```
-#### For windows powershell
-```shell
-xcopy .\tracker .\demo /s #say yes to all
-```
-
-1. Now you are done setting up developing environment.
-2. Open the roundup folder in VScode.
-3. Any new changes are only to be done in demo directory.
-4. git is initialized to track origin in demo directory (for windows check if .git folder is copied to the demo)
-
 #  Roundup - Classhelper
 ##  `<roundup-classhelper>`
 ## Why there is need of `<roundup-classhelper>` in the issue tracker?
@@ -224,7 +172,78 @@ Copy the following files into your Roundup instance `html` directory:
 
 After copying these files, you can use the `<roundup-classhelper>` component in your Roundup templates.
    
+# Missing translations
+To set up translations for the <roundup-classhelper> component, follow these steps:
 
+1. In your Roundup instance's Demo/locale directory, create a new file if not exists with the name __.po (e.g., de.po for German).
+   
+2. After the header, add the translation entries for the <roundup-classhelper> component. For example, for German, you can add:
+   msgid "Submit"
+   msgstr "gehen"
+
+   msgid "Next"
+   msgstr "nächste"
+
+   msgid "name"
+   msgstr "name"
+   
+3. Save the __.po file.
+
+4. Restart your Roundup instance.
+
+This should get you the missing translations, for more details refer roundup documentation for translations.
+
+# Development Setup
+
+### Clone mercurial repository.
+```shell
+hg clone http://hg.code.sf.net/p/roundup/code roundup
+```
+
+### Make python virtual env and activate it
+```shell
+cd roundup
+python -m venv .
+```
+#### For linux and mac
+```shell
+source bin/activate 
+```
+#### For windows powershell
+```shell
+.\scripts\Activate.ps1
+```
+
+### Install roundup
+```shell
+python -m pip install .
+```
+
+### Clone tracker only repo.
+```shell
+git clone https://github.com/UMB-CS-682-Team-03/tracker.git
+```
+
+### Init the demo tracker with default ./demo
+```shell
+roundup-demo -b sqlite
+```
+
+### Move the files from tracker dir to demo dir
+#### For linux and mac
+```shell
+cp -r ./tracker/**/* ./demo
+cp -r ./tracker/.git ./tracker/.gitignore ./demo
+```
+#### For windows powershell
+```shell
+xcopy .\tracker .\demo /s #say yes to all
+```
+
+1. Now you are done setting up developing environment.
+2. Open the roundup folder in VScode.
+3. Any new changes are only to be done in demo directory.
+4. git is initialized to track origin in demo directory (for windows check if .git folder is copied to the demo)
 
 # Running the Test Suite
 
@@ -233,13 +252,12 @@ After copying these files, you can use the `<roundup-classhelper>` component in 
 - GeckoDriver (for Firefox)
 
 ### Installation Instructions
-1. **Selenium Installation**:
-   Open your terminal or command prompt and run:
-   python -m pip install selenium==4.18.1
 
-2. **GeckoDriver Installation**:   
-	pip install geckodriver==0.0.1
+Enable the python virtual environment then proceed to install the following packages
 
+```shell
+   python -m pip install selenium geckodriver
+```
 
 #### To run the code in a Headless Environment:
 	Set "HEADLESS = TRUE " in line 12.
@@ -250,4 +268,3 @@ After copying these files, you can use the `<roundup-classhelper>` component in 
 
 ### Run the test suite
 	python test_classhelper.py
-
