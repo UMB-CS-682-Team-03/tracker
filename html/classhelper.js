@@ -623,6 +623,16 @@ class ClassHelper extends HTMLElement {
         search.addEventListener("click", (e) => {
             e.preventDefault();
             let fd = new FormData(form);
+
+            let hasError = this.popupRef.document.getElementsByClassName("search-error").item(0);
+            if (hasError != null) {
+                let current = fd.get(hasError.dataset.errorField)
+                let prev = hasError.dataset.errorValue;
+                if (current === prev) {
+                    return;
+                }
+            }
+
             this.dispatchEvent(new CustomEvent("search", {
                 detail: {
                     value: fd
@@ -1167,7 +1177,7 @@ class ClassHelper extends HTMLElement {
     }
 
     /** method when search is performed within classhelper, here we need to update the classhelper table with search results
-     * @param {URL | string} apiURL
+     * @param {URL} apiURL
      * @param {HelpUrlProps} props
      * @throws {Error} when fetching or parsing data from roundup rest api fails
      */
@@ -1202,6 +1212,42 @@ class ClassHelper extends HTMLElement {
             throw new Error(message, { cause: error });
         }
 
+        if (!resp.ok && resp.status === 400) {
+            // In the error message we will have the field name that caused the error.
+            // and the value that caused the error, in a double quoted string
+            // <some text> "(value)" <some text> "(key)", this regex is a capture group
+            // that captures the value and key in the error message.
+            let regexCaptureDoubleQuotedString = /"(.*?)"/g;
+            let iterator = json.error.msg.matchAll(regexCaptureDoubleQuotedString);
+            let results = Array.from(iterator);
+
+            if (results.length == 2) {
+                let value = results[0][1];
+                let field = results[1][1];
+
+                // Find the input element with the name of the key
+                let input = this.popupRef.document.getElementsByName(field).item(0);
+                if (input) {
+                    let parent = input.parentElement;
+                    parent.classList.add("search-error");
+                    parent.dataset.errorValue = value;
+                    parent.dataset.errorField = field;
+                    // remove if there was already an error message
+                    parent.getElementsByClassName("error-message").item(0)?.remove();
+                    let span = document.createElement("span");
+                    span.classList.add("error-message");
+                    span.textContent = `Invalid value: ${value}`;
+                    parent.appendChild(span);
+                    return;
+                }
+            }
+        }
+
+        if (!resp.ok && resp.status === 403) {
+            this.popupRef.alert(json.error.msg);
+            return;
+        }
+
         if (!resp.ok) {
             let message = `Unexpected response\n`;
             message += `url: ${apiURL.toString()}\n`;
@@ -1231,6 +1277,13 @@ class ClassHelper extends HTMLElement {
         const popupDocument = this.popupRef.document;
         const popupBody = this.popupRef.document.body;
         const pageIndex = selfPageURL.searchParams.get("@page_index");
+
+        // remove any previous error messages
+        let errors = Array.from(popupDocument.getElementsByClassName("search-error"));
+        errors.forEach(element => {
+            element.classList.remove("search-error");
+            element.getElementsByClassName("error-message").item(0)?.remove();
+        });
 
         const oldPaginationFrag = popupDocument.getElementById("popup-pagination");
         let newPaginationFrag = this.getPaginationFragment(prevPageURL, nextPageURL, pageIndex, props.pageSize, collection.length);
