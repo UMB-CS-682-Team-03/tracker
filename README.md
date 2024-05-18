@@ -1,23 +1,54 @@
-# Clone mercurial repository.
+# Development Setup
+
+### Clone mercurial repository.
+```shell
 hg clone http://hg.code.sf.net/p/roundup/code roundup
+```
 
-# Navigate to roundup, then git clone tracker only repo.
+### Make python virtual env and activate it
+```shell
 cd roundup
+python -m venv .
+```
+#### For linux and mac
+```shell
+source bin/activate 
+```
+#### For windows powershell
+```shell
+.\scripts\Activate.ps1
+```
+
+### Install roundup
+```shell
+python -m pip install .
+```
+
+### Clone tracker only repo.
+```shell
 git clone https://github.com/UMB-CS-682-Team-03/tracker.git
+```
 
-# Init the demo tracker
-python3 demo.py -b sqlite
+### Init the demo tracker with default ./demo
+```shell
+roundup-demo -b sqlite
+```
 
-# Move the files from tracker dir to demo dir
+### Move the files from tracker dir to demo dir
+#### For linux and mac
+```shell
 cp -r ./tracker/**/* ./demo
 cp -r ./tracker/.git ./tracker/.gitignore ./demo
+```
+#### For windows powershell
+```shell
+xcopy .\tracker .\demo /s #say yes to all
+```
 
-# Delete the tracker dir
-rm -rf ./tracker
-
-# Now you are setup open the roundup folder in VScode.
-# Any new changes are only to be done in demo dir
-# git is initialised to track origin in demo dir
+1. Now you are done setting up developing environment.
+2. Open the roundup folder in VScode.
+3. Any new changes are only to be done in demo directory.
+4. git is initialized to track origin in demo directory (for windows check if .git folder is copied to the demo)
 
 #  Roundup - Classhelper
 ##  `<roundup-classhelper>`
@@ -75,54 +106,60 @@ In addition to keyboard navigation, the `<roundup-classhelper>` component can be
 
    * If present, users can click on the submit button or any other controls in this section to trigger the submission or update action.
 
-### Admin guide for deploying roundup-classhelper to an existing tracker
+## Guide for using/deploying roundup-classhelper in a tracker
 #### Which tag to use and where to place it.
  * To customise your own classhelper you can introduce of the `<roundup-classhelper>` web component.
 
- * Locate the appropriate template files (e.g., issue.html) where you want to use the <roundup-classhelper>.
+ * Locate the appropriate template files (e.g., issue.html) where you want to use the `<roundup-classhelper>`.
  
- * Wrap the existing ClassHelper link with the <roundup-classhelper> tag.
+ * Wrap the existing ClassHelper link with the `<roundup-classhelper>` tag.
 ##### Before the code would look like this.
 ```html
 <th i18n:translate="">Nosy List</th>
- <td>
-  <span tal:replace="structure context/nosy/field" />
-    <span tal:condition="context/is_edit_ok" tal:replace="structure
-    python:db.user.classhelp('username,realname,address', property='nosy', width='600')" />    
-<br>
- </td>
+<td>
+<span tal:replace="structure context/nosy/field" />
+<span tal:condition="context/is_edit_ok" tal:replace="structure
+   python:db.user.classhelp('username,realname,address', property='nosy', width='600'" />
+</td>
   ```
 
 ##### After adding the `<roundup-classhelper>`, it should look like this.
 ```html
 <th i18n:translate="">Nosy List</th>
- <td>
-  <span tal:replace="structure context/nosy/field" />
-  <roundup-classhelper data-search-with="username,phone,roles[]">
-    <span tal:condition="context/is_edit_ok" tal:replace="structure
-    python:db.user.classhelp('username,realname,address', property='nosy', width='600')" />    
-  </roundup-classhelper>
-<br>
- </td>
+<td>
+<span tal:replace="structure context/nosy/field" />
+<roundup-classhelper data-popup-title="Nosy List Classhelper - {itemDesignator}" data-search-with="username,phone,roles[]">
+   <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.user.classhelp('username,realname,address', property='nosy', width='600')" />    
+</roundup-classhelper>
+</td>
   ```
 
-  #### Setting Attributes
-  * Set the `data-search-with` attribute to specify the fields that can be used for searching (e.g., `data-search-with="title,status,keyword"`).
+### Setting Attributes on `</roundup-classhelper>`
 
-  * Optionally, customize the search parameters using the following syntax:
-      * `"status[]"`: Displays a dropdown for the "status" field, showing all possible values. 
+#### Setting the `data-popup-title` attribute is optional.
+
+* Adding `data-popup-title` changes the title of the popup window with the value of the attribute.
+* `{itemDesignator}` can be used inside the attribute value to replace it with the current classhelper usage context.
+* eg. `data-popup-title="Nosy List Classhelper - {itemDesginator}"` will have the popup window title `Nosy List Classhelper - users`
+
+#### Setting the `data-search-with` attribute is optional.
+
+* Adding `data-search-with` specifies the fields that can be used for searching (e.g., `data-search-with="title,status,keyword"`).
+
+* Optionally, customize the search parameters using the following syntax:
+    * `"status[]"`: Displays a dropdown for the "status" field, showing all possible values. 
          ```html
          <roundup-classhelper data-search-with="title,status[],    keyword[]">
             <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder', pagesize=100)" />
          </roundup-classhelper>
          ```
-      * `"keyword[]+name"`: Sorts the "keyword" dropdown in ascending order by name.
+    * `"keyword[]+name"`: Sorts the "keyword" dropdown in ascending order by name.
          ```html
          <roundup-classhelper data-search-with="title,status[],keyword[]+name">
             <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder', pagesize=100)" />
          </roundup-classhelper>
          ```
-      * `"keyword[]-name"`: Sorts the "keyword" dropdown in descending order by name.
+    * `"keyword[]-name"`: Sorts the "keyword" dropdown in descending order by name.
          ```html
          <roundup-classhelper data-search-with="title,status[],keyword[]-name">
             <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder', pagesize=100)" />
@@ -130,7 +167,7 @@ In addition to keyboard navigation, the `<roundup-classhelper>` component can be
          ```
    * If the `roles` field cannot be displayed as a dropdown, it will be treated as a text-only match.
    
-   #### User ClassHelper
+### User ClassHelper
    * To emulate the normal user ClassHelper behavior (e.g., for username and roles), use the following attribute values:
       ``` html
       <roundup-classhelper data-search-with="username,roles[]">
@@ -138,18 +175,18 @@ In addition to keyboard navigation, the `<roundup-classhelper>` component can be
       </roundup-classhelper>
       ```
    
-   #### Fallback Mechanism
-   If the user's browser doesn't support web components, the `<roundup-classhelper>` will automatically fall back to the existing ClassHelper link.
+### Fallback Mechanism
+   If the user's browser doesn't support web components, the `<roundup-classhelper>` will automatically fall back to use ClassHelper link.
 
    <img src="./doc-assets/image-5.png" alt="Image Title" width="40%">
 
-   #### Error Handling
-   * In case of errors, the component will display relevant messages to the user.(component will notify the user)
+### Error Handling
+   * In case of errors, the component will use the fallback to use ClassHelper link while alerting the user.
    * For further debugging, users can open the browser console and inspect the results.
 
    
 
-   #### Refreshing `classhelper.css`
+### Refreshing `classhelper.css`
    In case of issues with the `<roundup-classhelper>` component, you can try refreshing the `classhelper.css` file by following these steps:
    * Open your Roundup issue tracker in a web browser.
    * In the address bar, append `@@file/classhelper.css` to the end of your Roundup URL. For example, if your Roundup URL is `http://example.com/tracker`, the URL you should visit would be `http://example.com/tracker/@@file/classhelper.css`

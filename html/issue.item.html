@@ -56,7 +56,7 @@
  <th i18n:translate="">Superseder</th>
  <td>
   <span tal:replace="structure python:context.superseder.field(showid=1, size=20)" />
-  <roundup-classhelper data-search-with="title,status,keyword[]-name">
+  <roundup-classhelper data-popup-title="Superseder Classhelper - {itemDesignator}" data-search-with="title,status,keyword[]-name">
     <span tal:condition="context/is_edit_ok" tal:replace="structure python:db.issue.classhelp('id,title', property='superseder', pagesize=100)" />
   </roundup-classhelper>
   <span tal:condition="context/superseder">
