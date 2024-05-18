@@ -24,6 +24,8 @@ const CSS_STYLESHEET_FILE_NAME = "@@file/classhelper.css";
 
 const CLASSHELPER_TAG_NAME = "roundup-classhelper";
 const CLASSHELPER_ATTRIBUTE_SEARCH_WITH = "data-search-with";
+const CLASSHELPER_ATTRIBUTE_POPUP_TITLE = "data-popup-title";
+const CLASSHELPER_ATTRIBUTE_POPUP_TITLE_ITEM_DESIGNATOR_LOOKUP = "{itemDesignator}";
 const CLASSHELPER_POPUP_FEATURES = (width, height) => `popup=yes,width=${width},height=${height}`;
 const CLASSHELPER_POPUP_URL = "about:blank";
 const CLASSHELPER_POPUP_TARGET = "_blank";
@@ -48,7 +50,7 @@ const ALTERNATIVE_DROPDOWN_PATHNAMES = {
  * ------------
  * The helpurl must be wrapped under this web component(user named html tag).
  * ```html
- * <roundup-classhelper data-search-with="title,status[],keyword[]+name">
+ * <roundup-classhelper data-popup-title="info - {itemDesignator} - Classhelper" data-search-with="title,status[],keyword[]+name">
  *   ( helpurl template here, this can be tal, chameleon, jinja2.
  *     In HTML DOM this is an helpurl anchor tag.
  *    )
@@ -77,6 +79,11 @@ const ALTERNATIVE_DROPDOWN_PATHNAMES = {
  * optionally there can be [] for a dropdown,
  * optionally with "[]" present to a column name there can be 
  * [+ or -] with succeeding "id" or "name" for sorting dropdown.
+ * 
+ * The data-popup-title attribute of the web component is optional.
+ * the value of this attribute is the title of the popup window.
+ * the user can use "{itemDesignator}" in the title to replace in the attribute value.
+ * and the current context of classhelper will replace "{itemDesignator}".
  * 
  */
 class ClassHelper extends HTMLElement {
@@ -943,22 +950,34 @@ class ClassHelper extends HTMLElement {
         }
 
         const itemDesignator = window.location.pathname.split("/").at(-1);
-        let titleText = `${itemDesignator} - Classhelper`;
-        if (props.formProperty) {
-            // main window lookup for the label of the form property
-            const label = document.getElementsByName(props.formProperty).item(0).parentElement.previousElementSibling;
-            titleText = label.textContent + " - " + titleText;
+        let titleText;
+
+        if (this.dataset.popupTitle) {
+            titleText = this.dataset.popupTitle;
+            const hasItemDesignator = titleText.includes(CLASSHELPER_ATTRIBUTE_POPUP_TITLE_ITEM_DESIGNATOR_LOOKUP);
+            if (hasItemDesignator) {
+                titleText = titleText.replace(CLASSHELPER_ATTRIBUTE_POPUP_TITLE_ITEM_DESIGNATOR_LOOKUP, itemDesignator);
+            }
+        } else {
+            titleText = `${itemDesignator} - Classhelper`;
+            if (props.formProperty) {
+                // main window lookup for the label of the form property
+                const field = document.getElementsByName(props.formProperty).item(0);
+                if (field) {
+                    const label = field.parentElement.previousElementSibling
+                    titleText = label.textContent + " - " + titleText;
+                }
+            }
         }
 
         const titleTag = document.createElement("title");
         titleTag.textContent = titleText;
+        head.appendChild(titleTag);
 
         const styleSheet = document.createElement("link");
         styleSheet.rel = "stylesheet";
         styleSheet.type = "text/css";
         styleSheet.href = this.trackerBaseURL + '/' + CSS_STYLESHEET_FILE_NAME;
-
-        head.appendChild(titleTag);
         head.appendChild(styleSheet);
 
         if (this.dataset.searchWith) {
