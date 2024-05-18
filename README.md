@@ -177,15 +177,18 @@ To set up translations for the <roundup-classhelper> component, follow these ste
 
 1. In your Roundup instance's Demo/locale directory, create a new file if not exists with the name __.po (e.g., de.po for German).
    
-2. After the header, add the translation entries for the <roundup-classhelper> component. For example, for German, you can add:
-   msgid "Submit"
+2. After the header, add the translation entries for the <roundup-classhelper> component. 
+For example next and submit are not being shown for German, you can add:
+   msgid "submit"
    msgstr "gehen"
 
-   msgid "Next"
+   msgid "next"
    msgstr "nächste"
 
    msgid "name"
    msgstr "name"
+
+The **msgid** here is case sensitive therefore be careful.
    
 3. Save the __.po file.
 
