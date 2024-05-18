@@ -1239,6 +1239,11 @@ class ClassHelper extends HTMLElement {
             }
         }
 
+        if (!resp.ok && resp.status === 403) {
+            this.popupRef.alert(json.error.msg);
+            return;
+        }
+
         if (!resp.ok) {
             let message = `Unexpected response\n`;
             message += `url: ${apiURL.toString()}\n`;
