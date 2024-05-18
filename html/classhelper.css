@@ -111,3 +111,13 @@ table tr:hover {
 .separator {
     flex-grow: 1;
 }
+
+.search-error input {
+    border: 2px solid red;
+}
+
+.search-error > .error-message {
+    color: red;
+    font-size: 14px;
+    margin-left: 4px;
+}
