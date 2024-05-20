@@ -179,6 +179,7 @@ To set up translations for the <roundup-classhelper> component, follow these ste
    
 2. After the header, add the translation entries for the <roundup-classhelper> component. 
 For example next and submit are not being shown for German, you can add:
+```
    msgid "submit"
    msgstr "gehen"
 
@@ -187,7 +188,7 @@ For example next and submit are not being shown for German, you can add:
 
    msgid "name"
    msgstr "name"
-
+```
 The **msgid** here is case sensitive therefore be careful.
    
 3. Save the __.po file.
@@ -263,10 +264,19 @@ Enable the python virtual environment then proceed to install the following pack
 ```
 
 #### To run the code in a Headless Environment:
-	Set "HEADLESS = TRUE " in line 12.
+
+Set 
+```
+HEADLESS = TRUE
+```
+at line 12.
 
 #### To run the code without Headless:
-	Set " HEADLESS = FALSE"  in line 12. 
+Set
+```
+HEADLESS = FALSE
+```
+at line 12. 
 
 
 ### Run the test suite
