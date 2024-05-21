@@ -57,12 +57,14 @@ table.popup-table tr:hover {
     background-color: #eee;
 }
 
-.popup-control button {
-    width: 7em;
+button {
+    min-width: 3em;
 }
 
 .popup-apply {
+    background-color: #c1cee6;
     font-weight: bold;
+    min-width: 7em;
 }
 
 /* Pagination */
@@ -96,6 +98,11 @@ table.popup-table tr:hover {
     font-weight: bold;
 }
 
+.search-button {
+    background-color: #c1cee6;
+    font-weight: bold;
+    min-width: 7em;
+}
 
 .reset-button {
     margin-left: 60px;
