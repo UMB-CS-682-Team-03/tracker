@@ -293,6 +293,10 @@ class ClassHelper extends HTMLElement {
                     });
             }
 
+	    if (classhelper.dataset.popupTitle) {
+		keys.add(classhelper.dataset.popupTitle)
+	    }
+
             const a = classhelper.querySelector("a");
             if (a && a.dataset.helpurl) {
                 let searchParams = new URLSearchParams(a.dataset.helpurl.split("?")[1]);
@@ -986,11 +990,10 @@ class ClassHelper extends HTMLElement {
         let titleText;
 
         if (this.dataset.popupTitle) {
-            titleText = this.dataset.popupTitle;
-            const hasItemDesignator = titleText.includes(CLASSHELPER_ATTRIBUTE_POPUP_TITLE_ITEM_DESIGNATOR_LOOKUP);
-            if (hasItemDesignator) {
-                titleText = titleText.replace(CLASSHELPER_ATTRIBUTE_POPUP_TITLE_ITEM_DESIGNATOR_LOOKUP, itemDesignator);
-            }
+            titleText = ClassHelper.translations[this.dataset.popupTitle];
+            titleText = titleText.replace(
+		CLASSHELPER_ATTRIBUTE_POPUP_TITLE_ITEM_DESIGNATOR_LOOKUP,
+		itemDesignator);
         } else {
             titleText = `${itemDesignator} - Classhelper`;
             if (props.formProperty) {
