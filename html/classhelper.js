@@ -735,7 +735,10 @@ class ClassHelper extends HTMLElement {
         const fragment = document.createDocumentFragment();
         const container = document.createElement("div");
         container.id = "popup-control";
-        container.classList.add("popup-control");
+
+        const form = document.createElement("form")
+        form.id = "accumulator-form"
+        form.classList.add("popup-control");
 
         const preview = document.createElement("input");
         preview.id = "popup-preview";
@@ -768,7 +771,8 @@ class ClassHelper extends HTMLElement {
             }))
         })
 
-        container.append(preview, apply, cancel);
+        form.append(preview, apply, cancel);
+        container.append(form)
         fragment.appendChild(container);
 
         return fragment;
