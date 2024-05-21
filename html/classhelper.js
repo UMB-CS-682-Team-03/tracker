@@ -852,14 +852,14 @@ class ClassHelper extends HTMLElement {
             tbody.addEventListener("click", (e) => {
                 let id, tr;
                 if (e.target.tagName === "INPUT" ) {
-                  tr = e.target.parentElement.parentElement;
-		  id = tr.dataset.id;
+                   tr = e.target.parentElement.parentElement;
+                   id = tr.dataset.id;
 	        } else if (e.target.tagName === "TD") {
-                    id = e.target.parentElement.dataset.id;
-                    tr = e.target.parentElement;
+                   tr = e.target.parentElement;
+                   id = tr.dataset.id;
                 } else if (e.target.tagName === "TR") {
-                    id = e.target.dataset.id;
-                    tr = e.target;
+                   tr = e.target;
+                   id = tr.dataset.id;
                 }
 
               if (e.target.tagName !== "INPUT") {
