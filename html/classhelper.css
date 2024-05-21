@@ -32,7 +32,7 @@ table td {
     vertical-align: middle;
 }
 
-table tr:hover {
+table.popup-table tr:hover {
     background-color: #eee;
     cursor: pointer;
 }
