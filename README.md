@@ -167,8 +167,9 @@ In addition to keyboard navigation, the `<roundup-classhelper>` component can be
 # Installing and Setup
 Copy the following files into your Roundup instance `html` directory:
 
-- `classhelper.css` ([[GitHub file link](https://github.com/UMB-CS-682-Team-03/tracker/blob/main/html/classhelper.css)])
-- `classhelper.js` ([[GitHub file link](https://github.com/UMB-CS-682-Team-03/tracker/blob/main/html/classhelper.js)])
+- `classhelper.css` ([[GitHub file link](https://github.com/UMB-CS-682-Team-03/tracker/raw/main/html/classhelper.css)])
+- `classhelper.js` ([[GitHub file link](https://github.com/UMB-CS-682-Team-03/tracker/raw/main/html/classhelper.js)])
+- `_generic.translate` ([[GitHub file link](https://github.com/UMB-CS-682-Team-03/tracker/raw/main/html/_generic.translation)])
 
 After copying these files, you can use the `<roundup-classhelper>` component in your Roundup templates.
    
