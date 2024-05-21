@@ -914,6 +914,11 @@ class ClassHelper extends HTMLElement {
         /** @type {string[]} */
         let preSelectedValues = [];
 
+        if (document.URL.endsWith("#classhelper-abort")) {
+          throw new Error("Aborting due to #classhelper-abort fragment",
+			  { cause: "Abort requested." });
+        }
+
         try {
             resp = await fetch(apiURL);
         } catch (error) {
