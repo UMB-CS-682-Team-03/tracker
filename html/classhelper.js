@@ -29,13 +29,15 @@ const CSS_STYLESHEET_FILE_NAME = "@@file/classhelper.css";
 const CLASSHELPER_TAG_NAME = "roundup-classhelper";
 const CLASSHELPER_ATTRIBUTE_SEARCH_WITH = "data-search-with";
 const CLASSHELPER_ATTRIBUTE_POPUP_TITLE = "data-popup-title";
+const CLASSHELPER_ATTRIBUTE_POPUP_TITLE_ITEM_CLASS_LOOKUP = "{className}";
 const CLASSHELPER_ATTRIBUTE_POPUP_TITLE_ITEM_DESIGNATOR_LOOKUP = "{itemDesignator}";
 const CLASSHELPER_POPUP_FEATURES = (width, height) => `popup=yes,width=${width},height=${height}`;
 const CLASSHELPER_POPUP_URL = "about:blank";
 const CLASSHELPER_POPUP_TARGET = "_blank";
 
+const CLASSHELPER_READONLY_POPUP_TITLE = "Info on {className} - {itemDesignator} - Classhelper"
 const CLASSHELPER_TABLE_SELECTION_NONE = "table-selection-none";
-const CLASSHELPER_TRANSLATION_KEYWORDS = ["apply", "cancel", "next", "prev", "search", "reset"];
+const CLASSHELPER_TRANSLATION_KEYWORDS = ["apply", "cancel", "next", "prev", "search", "reset", CLASSHELPER_READONLY_POPUP_TITLE ];
 
 const ALTERNATIVE_DROPDOWN_PATHNAMES = {
     "roles": "/rest/roles"
@@ -992,12 +994,17 @@ class ClassHelper extends HTMLElement {
         } else {
             titleText = `${itemDesignator} - Classhelper`;
             if (props.formProperty) {
-                // main window lookup for the label of the form property
-                const field = document.getElementsByName(props.formProperty).item(0);
-                if (field) {
-                    const label = field.parentElement.previousElementSibling
-                    titleText = label.textContent + " - " + titleText;
-                }
+                // use the formProperty as the label for the window
+                titleText = props.formProperty + " - " + titleText;
+            } else if (props.apiClassName) {
+                titleText = ClassHelper.translations[
+                    CLASSHELPER_READONLY_POPUP_TITLE
+		].replace(
+		    CLASSHELPER_ATTRIBUTE_POPUP_TITLE_ITEM_DESIGNATOR_LOOKUP,
+		    itemDesignator);
+                titleText = titleText.replace(
+		    CLASSHELPER_ATTRIBUTE_POPUP_TITLE_ITEM_CLASS_LOOKUP,
+		    props.apiClassName);
             }
         }
 
