@@ -828,11 +828,13 @@ class ClassHelper extends HTMLElement {
             row.classList.add("row-style");
 
             if (includeCheckbox) {
+                const td = document.createElement('td');
                 const checkbox = document.createElement("input");
                 checkbox.setAttribute("type", "checkbox");
                 checkbox.checked = false;
                 checkbox.setAttribute("tabindex", -1);
-                row.appendChild(checkbox);
+                td.appendChild(checkbox)
+                row.appendChild(td);
                 if (preSelectedValues.includes(entry[headers[0]])) {
                     checkbox.checked = true;
                 }
@@ -849,7 +851,10 @@ class ClassHelper extends HTMLElement {
         if (includeCheckbox) {
             tbody.addEventListener("click", (e) => {
                 let id, tr;
-                if (e.target.tagName === "INPUT" || e.target.tagName === "TD") {
+                if (e.target.tagName === "INPUT" ) {
+                  tr = e.target.parentElement.parentElement;
+		  id = tr.dataset.id;
+	        } else if (e.target.tagName === "TD") {
                     id = e.target.parentElement.dataset.id;
                     tr = e.target.parentElement;
                 } else if (e.target.tagName === "TR") {
@@ -857,8 +862,10 @@ class ClassHelper extends HTMLElement {
                     tr = e.target;
                 }
 
-                if (e.target.tagName !== "INPUT") {
-                    tr.children.item(0).checked = !tr.children.item(0).checked;
+              if (e.target.tagName !== "INPUT") {
+		/* checkbox is only child of the first td of the table row */
+		let checkbox = tr.children.item(0).children.item(0);
+		checkbox.checked = !checkbox.checked;
                 }
 
                 this.dispatchEvent(new CustomEvent("selection", {
@@ -1074,7 +1081,8 @@ class ClassHelper extends HTMLElement {
                 if (e.target.tagName == "TR" && e.shiftKey == false) {
                     e.preventDefault();
                     let tr = e.target;
-                    tr.children.item(0).checked = !tr.children.item(0).checked;
+                    let checkbox = tr.children.item(0).children.item(0)
+                    checkbox.checked = !checkbox.checked;
                     this.dispatchEvent(new CustomEvent("selection", {
                         detail: {
                             value: tr.dataset.id
@@ -1091,7 +1099,8 @@ class ClassHelper extends HTMLElement {
                 if (e.target.tagName == "TR" && e.shiftKey == false) {
                     e.preventDefault();
                     let tr = e.target;
-                    tr.children.item(0).checked = !tr.children.item(0).checked;
+                    let checkbox = tr.children.item(0).children.item(0)
+                    checkbox.checked = !checkbox.checked;
                     this.dispatchEvent(new CustomEvent("selection", {
                         detail: {
                             value: tr.dataset.id
