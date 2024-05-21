@@ -590,6 +590,7 @@ class ClassHelper extends HTMLElement {
             } else {
                 input = document.createElement("input");
                 input.setAttribute("type", "text");
+                input.setAttribute("autocapitalize", "off")
 
                 if (formData) {
                     let value = formData.get(param);
