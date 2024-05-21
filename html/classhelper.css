@@ -61,6 +61,14 @@ button {
     min-width: 3em;
 }
 
+@media (pointer: coarse) {
+    /* make min width 48px (3em*16px/em) on touch screens */
+  button {
+    min-height: 3em;
+  }
+  table td { padding-block: 2em; }
+}
+
 .popup-apply {
     background-color: #c1cee6;
     font-weight: bold;
