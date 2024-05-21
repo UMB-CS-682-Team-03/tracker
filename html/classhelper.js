@@ -565,6 +565,7 @@ class ClassHelper extends HTMLElement {
             label.setAttribute("for", param);
             label.textContent = ClassHelper.translations[param] + ":";
 
+            let focusSet = false
             let input;
             if (this.dropdownsData[param]) {
                 input = document.createElement("select");
@@ -601,6 +602,10 @@ class ClassHelper extends HTMLElement {
             input.setAttribute("name", param);
             input.setAttribute("id", param);
             input.classList.add("search-input"); // Add class for styling   
+	    if (!focusSet) {
+	      input.setAttribute("autofocus", "");
+	      focusSet = true;
+	    }
 
             labelCell.appendChild(label);
             inputCell.appendChild(input);
