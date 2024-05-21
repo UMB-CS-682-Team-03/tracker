@@ -128,6 +128,8 @@ In addition to keyboard navigation, the `<roundup-classhelper>` component can be
 
    <img src="./doc-assets/image-5.png" alt="Image Title" width="40%">
 
+   There is also an emergency mechanism to disable roundup-classhelper and allow the fallback classhelper to be used. Set `DISABLE_CLASSHELPER` to `true` in classhelper.js. After force reloading the tracker page, the roundup-classhelper will be disabled without having to edit all the templates and remove `<roundup-classhelper>`.
+   
 ### Error Handling
    * In case of errors, the component will use the fallback to use ClassHelper link while alerting the user.
    * For further debugging, users can open the browser console and inspect the results.

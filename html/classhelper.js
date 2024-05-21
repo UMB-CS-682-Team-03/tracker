@@ -19,6 +19,10 @@
  * @property {number} pageSize
  */
 
+
+// change this to true to disable the classhelper
+const DISABLE_CLASSHELPER = false
+
 // Let user customize the css file name
 const CSS_STYLESHEET_FILE_NAME = "@@file/classhelper.css";
 
@@ -1334,6 +1338,10 @@ class ClassHelper extends HTMLElement {
 function enableClassHelper() {
     if (document.URL.endsWith("#classhelper-wc-toggle")) {
         return;
+    }
+
+    if (DISABLE_CLASSHELPER) {
+      return;
     }
 
     /** make api call if error then do not register*/
