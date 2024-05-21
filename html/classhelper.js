@@ -552,6 +552,7 @@ class ClassHelper extends HTMLElement {
 
         const table = document.createElement("table");
         table.classList.add("search-table"); // Add class for styling
+        table.setAttribute("role", "presentation");
 
         for (var param of params) {
             param = param.split("[]")[0];
