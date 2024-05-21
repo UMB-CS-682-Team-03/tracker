@@ -768,7 +768,7 @@ class ClassHelper extends HTMLElement {
             }))
         })
 
-        container.append(preview, cancel, apply);
+        container.append(preview, apply, cancel);
         fragment.appendChild(container);
 
         return fragment;
