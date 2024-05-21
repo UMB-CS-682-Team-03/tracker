@@ -1239,7 +1239,7 @@ class ClassHelper extends HTMLElement {
                     parent.dataset.errorField = field;
                     // remove if there was already an error message
                     parent.getElementsByClassName("error-message").item(0)?.remove();
-                    let span = document.createElement("span");
+                    let span = document.createElement("div");
                     span.classList.add("error-message");
                     span.textContent = `Invalid value: ${value}`;
                     parent.appendChild(span);

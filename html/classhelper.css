@@ -120,4 +120,7 @@ table.popup-table tr:hover {
     color: red;
     font-size: 14px;
     margin-left: 4px;
+    padding-block-start: 0.25em;
 }
+
+*:focus-visible { outline-offset: 3px; }
