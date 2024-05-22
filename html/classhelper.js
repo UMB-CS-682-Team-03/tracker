@@ -137,7 +137,7 @@ class ClassHelper extends HTMLElement {
 
             // Removing the helpurl click behavior
             this.helpurlScript = this.helpurl.getAttribute("onclick");
-            this.helpurl.setAttribute("onclick", "");
+            this.helpurl.removeAttribute("onclick", "");
             this.helpurl.addEventListener("click", this.preventDefault);
 
             this.helpurlProps = ClassHelper.parseHelpUrlProps(this.helpurl);
