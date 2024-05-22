@@ -761,12 +761,9 @@ class ClassHelper extends HTMLElement {
 
         const cancel = document.createElement("button");
         cancel.textContent = ClassHelper.translations["cancel"];
+        cancel.setAttribute('type', 'button');
         cancel.addEventListener("click", () => {
-            this.dispatchEvent(new CustomEvent("valueSelected", {
-                detail: {
-                    value: preview.value
-                }
-            }));
+            this.popupRef.close();
         });
 
         const apply = document.createElement("button");
