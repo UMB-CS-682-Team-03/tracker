@@ -2,12 +2,7 @@
 ><tal:x tal:replace="python:request.client.additional_headers.update(
     {'Content-Type':'application/vnd.roundup.translation+json'}
     )"></tal:x>{
-        "Apply": "<tal:x tal:replace="python:i18n.gettext('Apply')" />",
-        "Cancel": "<tal:x tal:replace="python:i18n.gettext('Cancel')" />",
-        "Next": "<tal:x tal:replace="python:i18n.gettext('Next')" />",
-        "Prev": "<tal:x tal:replace="python:i18n.gettext('Prev')" />",
-        "Search": "<tal:x tal:replace="python:i18n.gettext('Search')" />",
-        "Reset": "<tal:x tal:replace="python:i18n.gettext('Reset')" />"<tal:block
+   "RoundupTranslations": "RoundupTranslations"<tal:block
 	tal:condition="request/form/properties/value | false"
 	    ><tal:loop tal:repeat="field
                  python:request.form['properties'].value.split(',')"
